@@ -10,7 +10,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'supersecretkey_final_version'
 
-# --- 웹사이트 전체 HTML (문장 수정 버전) ---
+# --- 웹사이트 전체 HTML (물리적 줄바꿈   
+ 적용 버전) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -104,7 +105,8 @@ HTML_TEMPLATE = """
                 <h1>가장 직관적인 원격 제어 솔루션,
                     <span class="highlight">OverView</span>
                 </h1>
-                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요. OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 표준을 제시합니다.</p>
+                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요.  
+OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 기준을 제시합니다.</p>
             </div>
         </section>
         <section id="download" class="section">
@@ -121,22 +123,28 @@ HTML_TEMPLATE = """
                 <h2 class="section-title">주요 기능</h2>
                 <div class="grid">
                     <div class="card feature-card">
-                        <div class="icon">🖥️</div> <h3>실시간 화면 공유</h3> <p>지연 시간을 최소화한 고화질 화면 스트리밍으로 여러 대의 PC를 동시에 모니터링하세요.</p>
+                        <div class="icon">🖥️</div> <h3>실시간 화면 공유</h3> <p>지연 시간을 최소화한 고화질 화면 스트리밍으로  
+여러 대의 PC를 동시에 모니터링하세요.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격 PC의 키보드와 마우스를 완벽히 제어할 수 있습니다.</p>
+                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격지 PC의 키보드와 마우스를  
+완벽하게 제어할 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">📋</div> <h3>양방향 클립보드</h3> <p>내 PC에서 복사한 텍스트를 원격 PC에 붙여넣거나, 그 반대의 작업도 자유롭게 수행하세요.</p>
+                        <div class="icon">📋</div> <h3>양방향 클립보드</h3> <p>내 PC에서 복사한 텍스트를 원격 PC에 붙여넣거나,  
+그 반대의 작업도 자유롭게 수행하세요.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">🔊</div> <h3>실시간 사운드</h3> <p>원격 PC에서 재생되는 사운드를 내 PC에서 실시간으로 들으며 작업할 수 있습니다.</p>
+                        <div class="icon">🔊</div> <h3>실시간 사운드</h3> <p>원격 PC에서 재생되는 사운드를  
+내 PC에서 실시간으로 들으며 작업할 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>메뉴를 통해 원격 PC와 파일을 손쉽게 주고받을 수 있습니다.</p>
+                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>메뉴를 통해 원격 PC와 파일을  
+손쉽게 주고받을 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">📊</div> <h3>시스템 모니터링</h3> <p>CPU, 메모리 사용량, 디스크 공간 등 원격 PC의 핵심 시스템 정보를 실시간으로 확인합니다.</p>
+                        <div class="icon">📊</div> <h3>시스템 모니터링</h3> <p>CPU, 메모리 사용량, 디스크 공간 등  
+원격 PC의 핵심 시스템 정보를 실시간으로 확인합니다.</p>
                     </div>
                 </div>
             </div>
@@ -146,13 +154,18 @@ HTML_TEMPLATE = """
                 <h2 class="section-title">기본 사용법</h2>
                 <div class="grid">
                     <div class="card">
-                        <div class="step-number">01</div> <h3>연결 설정</h3> <p>클라이언트 프로그램을 실행하고, 제어 PC(매니저)의 IP 주소를 입력합니다. 식별하기 쉬운 '이 PC 이름'을 설정한 후 '연결 시작' 버튼을 누르세요.</p>
+                        <div class="step-number">01</div> <h3>연결 설정</h3> <p>클라이언트 프로그램을 실행하고, 제어 PC의 IP 주소를 입력합니다.  
+식별하기 쉬운 '이 PC 이름'을 설정한 후 '연결 시작' 버튼을 누르세요.</p>
                     </div>
                     <div class="card">
-                        <div class="step-number">02</div> <h3>백그라운드 실행</h3> <p>연결이 시작되면 프로그램 창은 자동으로 사라지고, 작업 표시줄 트레이 아이콘으로 최소화됩니다. 이제 제어 PC에서 원격 관리를 시작할 수 있습니다.</p>
+                        <div class="step-number">02</div> <h3>백그라운드 실행</h3> <p>연결이 시작되면 프로그램 창은 자동으로 사라지고,  
+작업 표시줄 트레이 아이콘으로 최소화됩니다.  
+이제 제어 PC에서 원격 관리를 시작할 수 있습니다.</p>
                     </div>
                     <div class="card">
-                        <div class="step-number">03</div> <h3>제어권 관리</h3> <p>여러 매니저가 동시에 접속한 경우, 오직 한 명의 매니저만 '제어 모드'로 전환하여 PC를 조작할 수 있습니다. 이는 입력 충돌을 방지하기 위한 기능입니다.</p>
+                        <div class="step-number">03</div> <h3>제어권 관리</h3> <p>여러 매니저가 동시에 접속한 경우,  
+오직 한 명의 매니저만 '제어 모드'로 전환하여 PC를 조작할 수 있습니다.  
+이는 입력 충돌을 방지하기 위한 기능입니다.</p>
                     </div>
                 </div>
             </div>
@@ -163,15 +176,21 @@ HTML_TEMPLATE = """
                 <div class="faq-container">
                     <div class="faq-item">
                         <div class="faq-question">Q. 프로그램을 실행했지만 오류가 발생하며 작동하지 않습니다.</div>
-                        <div class="faq-answer"> <p>A. 프로그램 실행에 필요한 시스템 드라이버가 설치되지 않았거나 다른 문제일 수 있습니다. <strong>문제를 직접 해결하려고 시도하지 마시고, 즉시 시스템 관리자에게 문의하여 지원을 받으시기 바랍니다.</strong></p> </div>
+                        <div class="faq-answer"> <p>A. 프로그램 실행에 필요한 시스템 드라이버가 설치되지 않았거나  
+다른 문제일 수 있습니다. <strong>문제를 직접 해결하려고 시도하지 마시고,  
+즉시 시스템 관리자에게 문의하여 지원을 받으시기 바랍니다.</strong></p> </div>
                     </div>
                     <div class="faq-item">
                         <div class="faq-question">Q. 연결이 되지 않거나 자꾸 끊어집니다.</div>
-                        <div class="faq-answer"> <p>A. 먼저 제어 PC(매니저)의 IP 주소가 정확한지 확인해주세요. 또한, 클라이언트 PC와 제어 PC가 동일한 네트워크에 있는지, 방화벽이 포트 443을 차단하고 있지는 않은지 확인해야 합니다. 회사나 공용 네트워크의 경우, 네트워크 보안 정책에 의해 연결이 제한될 수 있습니다.</p> </div>
+                        <div class="faq-answer"> <p>A. 먼저 제어 PC(매니저)의 IP 주소가 정확한지 확인해주세요.  
+또한, 클라이언트 PC와 제어 PC가 동일한 네트워크에 있는지,  
+방화벽이 포트 443을 차단하고 있지는 않은지 확인해야 합니다.</p> </div>
                     </div>
                     <div class="faq-item">
                         <div class="faq-question">Q. 제어권은 어떻게 얻나요?</div>
-                        <div class="faq-answer"> <p>A. 제어권은 제어 PC(매니저) 프로그램에서 설정할 수 있습니다. 여러 클라이언트 화면 중 제어하고 싶은 PC를 선택하고 '제어 모드'로 전환하면 해당 PC의 제어권을 획득하게 됩니다. 동시에 두 명 이상의 매니저가 한 PC를 제어할 수는 없습니다.</p> </div>
+                        <div class="faq-answer"> <p>A. 제어권은 제어 PC(매니저) 프로그램에서 설정할 수 있습니다.  
+여러 클라이언트 화면 중 제어하고 싶은 PC를 선택하고  
+'제어 모드'로 전환하면 해당 PC의 제어권을 획득하게 됩니다.</p> </div>
                     </div>
                 </div>
             </div>
