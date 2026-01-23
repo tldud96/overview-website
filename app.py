@@ -3,16 +3,14 @@ from flask import Flask, request, redirect, url_for, send_from_directory, render
 from werkzeug.utils import secure_filename
 
 # --- 설정 ---
-# 현재 작업 디렉토리를 파일 저장 폴더로 사용합니다.
 UPLOAD_FOLDER = os.getcwd()
-# 프로그램 파일명을 'OverView.zip'으로 설정합니다.
 PROGRAM_FILENAME = 'OverView.zip'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'supersecretkey_final_version'
 
-# --- 우리가 함께 만들었던 웹사이트의 모든 디자인과 내용 ---
+# --- 웹사이트 전체 HTML, CSS, JS 코드 ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -110,6 +108,8 @@ HTML_TEMPLATE = """
             max-width: 600px;
             margin: 0 auto 40px auto;
             color: var(--text-dark);
+            /* ===== 줄바꿈 문제 해결을 위한 코드 ===== */
+            word-break: keep-all;
         }
         .btn {
             display: inline-block;
@@ -215,7 +215,6 @@ HTML_TEMPLATE = """
                     <span class="highlight">OverView</span>
                 </h1>
                 <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요. OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 기준을 제시합니다.</p>
-                <a href="#download" class="btn">지금 바로 시작하기</a>
             </div>
         </section>
         <section id="download" class="section">
@@ -320,11 +319,9 @@ def index():
 @app.route('/download')
 def download_file():
     """파일 다운로드 링크를 처리합니다."""
-    # 현재 작업 디렉토리에서 PROGRAM_FILENAME을 찾아 다운로드합니다.
     return send_from_directory(app.config['UPLOAD_FOLDER'], PROGRAM_FILENAME, as_attachment=True)
 
 if __name__ == '__main__':
     # 로컬 테스트 서버 실행 (이 부분은 Render.com에서는 사용되지 않습니다)
     print("로컬 테스트 서버를 시작합니다. http://127.0.0.1:5001 에서 접속하세요." )
     app.run(host='0.0.0.0', port=5001, debug=True)
-
