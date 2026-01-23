@@ -1,7 +1,6 @@
 import os
 import time
-from flask import Flask, request, redirect, url_for, send_from_directory, render_template_string, flash
-from werkzeug.utils import secure_filename
+from flask import Flask, send_from_directory, render_template_string
 
 # --- 설정 ---
 UPLOAD_FOLDER = os.getcwd()
@@ -11,7 +10,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'supersecretkey_final_version'
 
-# --- 웹사이트 전체 HTML ---
+# --- 웹사이트 전체 HTML (문장 수정 버전) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -19,7 +18,72 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OverView - 원격 제어 솔루션</title>
-    <link rel="stylesheet" href="{{ url_for('static_css') }}?v={{ version }}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
+        :root {
+            --bg-color: #0a0e27;
+            --frame-bg: #1a1f3a;
+            --primary-neon: #64b5f6;
+            --secondary-neon: #4dffaf;
+            --text-color: #e0e0e0;
+            --text-dark: #a0a0a0;
+            --border-color: #2a3f7f;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.8;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+        header {
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+        .logo { font-size: 28px; font-weight: 700; color: var(--primary-neon); text-shadow: 0 0 8px rgba(100, 181, 246, 0.7); cursor: pointer; text-decoration: none; }
+        .nav-menu { list-style: none; display: flex; }
+        .nav-menu li { margin-left: 30px; }
+        .nav-menu a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 5px 0; border-bottom: 2px solid transparent; }
+        .nav-menu a:hover { color: var(--primary-neon); text-shadow: 0 0 3px var(--primary-neon); border-bottom-color: var(--primary-neon); }
+        .section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
+        .section:last-child { border-bottom: none; }
+        .section-title { font-size: 42px; font-weight: 700; text-align: center; margin-bottom: 60px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
+        #hero { height: 100vh; min-height: 700px; display: flex; justify-content: center; align-items: center; text-align: center; }
+        .hero-content { max-width: 800px; }
+        .hero-content h1 { font-size: 56px; font-weight: 700; color: #fff; line-height: 1.3; margin: 0; }
+        .hero-content .highlight { display: block; font-size: 72px; color: #cce7ff; text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3); margin: 10px 0 25px 0; }
+        .hero-content p { font-size: 18px; max-width: 600px; margin: 0 auto 40px auto; color: var(--text-dark); }
+        .btn { display: inline-block; padding: 15px 35px; background: var(--primary-neon); color: var(--bg-color); font-weight: 700; text-decoration: none; border-radius: 50px; transition: all 0.3s ease; box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
+        #download { padding: 120px 0; }
+        .download-box { background: var(--frame-bg); padding: 50px; border-radius: 15px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 0 30px rgba(26, 31, 58, 0.5); }
+        .download-box h3 { font-size: 28px; margin-bottom: 15px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
+        .download-box p { color: var(--text-dark); margin-bottom: 30px; font-size: 18px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: var(--frame-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary-neon); box-shadow: 0 0 20px rgba(100, 181, 246, 0.2); }
+        .card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
+        .card p { font-size: 15px; color: var(--text-dark); }
+        .card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
+        .feature-card { text-align: center; }
+        .feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
+        .faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-size: 18px; font-weight: 600; cursor: pointer; position: relative; padding-right: 30px; }
+        .faq-question::after { content: '+'; position: absolute; right: 0; font-size: 24px; color: var(--primary-neon); transition: transform 0.3s; }
+        .faq-item.active .faq-question::after { transform: rotate(45deg); }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; padding-top: 0; color: var(--text-dark); }
+        .faq-item.active .faq-answer { padding-top: 15px; }
+        footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
+    </style>
 </head>
 <body>
     <header>
@@ -40,7 +104,7 @@ HTML_TEMPLATE = """
                 <h1>가장 직관적인 원격 제어 솔루션,
                     <span class="highlight">OverView</span>
                 </h1>
-                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요. OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 기준을 제시합니다.</p>
+                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요. OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 표준을 제시합니다.</p>
             </div>
         </section>
         <section id="download" class="section">
@@ -48,7 +112,7 @@ HTML_TEMPLATE = """
                 <div class="download-box">
                     <h3>지금 바로 OverView를 경험해보세요</h3>
                     <p>최신 버전의 클라이언트 프로그램을 다운로드하여 설치하세요.</p>
-                    <a href="{{ url_for('download_file') }}" class="btn">OverView 다운로드</a>
+                    <a href="/download" class="btn">OverView 다운로드</a>
                 </div>
             </div>
         </section>
@@ -60,7 +124,7 @@ HTML_TEMPLATE = """
                         <div class="icon">🖥️</div> <h3>실시간 화면 공유</h3> <p>지연 시간을 최소화한 고화질 화면 스트리밍으로 여러 대의 PC를 동시에 모니터링하세요.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격지 PC의 키보드와 마우스를 완벽하게 제어할 수 있습니다.</p>
+                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격 PC의 키보드와 마우스를 완벽히 제어할 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
                         <div class="icon">📋</div> <h3>양방향 클립보드</h3> <p>내 PC에서 복사한 텍스트를 원격 PC에 붙여넣거나, 그 반대의 작업도 자유롭게 수행하세요.</p>
@@ -69,7 +133,7 @@ HTML_TEMPLATE = """
                         <div class="icon">🔊</div> <h3>실시간 사운드</h3> <p>원격 PC에서 재생되는 사운드를 내 PC에서 실시간으로 들으며 작업할 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
-                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>간단한 드래그 앤 드롭(예정)이나 메뉴를 통해 원격 PC와 파일을 손쉽게 주고받을 수 있습니다.</p>
+                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>메뉴를 통해 원격 PC와 파일을 손쉽게 주고받을 수 있습니다.</p>
                     </div>
                     <div class="card feature-card">
                         <div class="icon">📊</div> <h3>시스템 모니터링</h3> <p>CPU, 메모리 사용량, 디스크 공간 등 원격 PC의 핵심 시스템 정보를 실시간으로 확인합니다.</p>
@@ -135,196 +199,12 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# --- CSS 코드를 별도의 변수로 분리 ---
-CSS_TEMPLATE = """
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
-:root {
-    --bg-color: #0a0e27;
-    --frame-bg: #1a1f3a;
-    --primary-neon: #64b5f6;
-    --secondary-neon: #4dffaf;
-    --text-color: #e0e0e0;
-    --text-dark: #a0a0a0;
-    --border-color: #2a3f7f;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-    font-family: 'Poppins', 'Noto Sans KR', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    line-height: 1.8;
-}
-.container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
-header {
-    background: rgba(10, 14, 39, 0.8);
-    backdrop-filter: blur(10px);
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 100;
-    border-bottom: 1px solid var(--border-color);
-}
-.navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
-.logo {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--primary-neon);
-    text-shadow: 0 0 8px rgba(100, 181, 246, 0.7);
-    cursor: pointer;
-}
-.nav-menu { list-style: none; display: flex; }
-.nav-menu li { margin-left: 30px; }
-.nav-menu a {
-    color: var(--text-color);
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    padding: 5px 0;
-    border-bottom: 2px solid transparent;
-}
-.nav-menu a:hover {
-    color: var(--primary-neon);
-    text-shadow: 0 0 3px var(--primary-neon);
-    border-bottom-color: var(--primary-neon);
-}
-.section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
-.section:last-child { border-bottom: none; }
-.section-title {
-    font-size: 42px;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 60px;
-    color: #fff;
-    text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
-}
-#hero {
-    height: 100vh;
-    min-height: 700px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-.hero-content { max-width: 800px; }
-.hero-content h1 {
-    font-size: 56px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.3;
-    margin: 0;
-}
-.hero-content .highlight {
-    display: block;
-    font-size: 72px;
-    color: #cce7ff;
-    text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3);
-    margin: 10px 0 25px 0;
-}
-/* ===== 모든 설명 문단(p)에 줄바꿈 규칙 일괄 적용 ===== */
-p {
-    word-break: keep-all !important;
-}
-.hero-content p {
-    font-size: 18px;
-    max-width: 600px;
-    margin: 0 auto 40px auto;
-    color: var(--text-dark);
-}
-.btn {
-    display: inline-block;
-    padding: 15px 35px;
-    background: var(--primary-neon);
-    color: var(--bg-color);
-    font-weight: 700;
-    text-decoration: none;
-    border-radius: 50px;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5);
-}
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5);
-}
-#download { padding: 120px 0; }
-.download-box {
-    background: var(--frame-bg);
-    padding: 50px;
-    border-radius: 15px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 0 30px rgba(26, 31, 58, 0.5);
-}
-.download-box h3 {
-    font-size: 28px;
-    margin-bottom: 15px;
-    color: #fff;
-    text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
-}
-.download-box p {
-    color: var(--text-dark);
-    margin-bottom: 30px;
-    font-size: 18px;
-}
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-.card {
-    background: var(--frame-bg);
-    padding: 30px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-}
-.card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-neon);
-    box-shadow: 0 0 20px rgba(100, 181, 246, 0.2);
-}
-.card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
-.card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
-.feature-card { text-align: center; }
-.feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
-.feature-card h3 { color: var(--secondary-neon); }
-.feature-card p { color: var(--text-dark); font-size: 15px; }
-.faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
-.faq-item:last-child { border-bottom: none; }
-.faq-question {
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    position: relative;
-    padding-right: 30px;
-}
-.faq-question::after {
-    content: '+';
-    position: absolute;
-    right: 0;
-    font-size: 24px;
-    color: var(--primary-neon);
-    transition: transform 0.3s;
-}
-.faq-item.active .faq-question::after { transform: rotate(45deg); }
-.faq-answer {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.5s ease-out;
-    padding-top: 0;
-    color: var(--text-dark);
-}
-.faq-item.active .faq-answer { padding-top: 15px; }
-footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
-"""
-
 # --- Flask 라우트(경로) 정의 ---
 
 @app.route('/')
 def index():
     """메인 웹페이지를 렌더링합니다."""
-    return render_template_string(HTML_TEMPLATE, version=time.time())
-
-@app.route('/static/style.css')
-def static_css():
-    """CSS 코드를 별도의 경로로 제공합니다."""
-    return app.response_class(CSS_TEMPLATE, mimetype='text/css')
+    return render_template_string(HTML_TEMPLATE)
 
 @app.route('/download')
 def download_file():
