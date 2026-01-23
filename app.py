@@ -2,23 +2,20 @@ import os
 import time
 from flask import Flask, render_template_string, redirect
 
-# --- 설정 ---
-UPLOAD_FOLDER = os.getcwd()
-PROGRAM_FILENAME = 'OverView.zip'
-
 # =========================
-# GitHub Releases 최신 파일로 다운로드(177MB 이상 대응)
+# GitHub Releases 다운로드 설정
 # =========================
-GITHUB_OWNER = 'tldud96'
-GITHUB_REPO = 'overview-website'
-RELEASE_ASSET_NAME = PROGRAM_FILENAME  # 릴리스에 업로드한 파일명과 동일해야 함
-DOWNLOAD_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest/download/{RELEASE_ASSET_NAME}"
+GITHUB_OWNER = "tldud96"
+GITHUB_REPO = "overview-website"
+PROGRAM_FILENAME = "OverView.zip"   # Releases에 업로드한 파일명과 동일해야 함
+DOWNLOAD_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest/download/{PROGRAM_FILENAME}"
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SECRET_KEY'] = 'supersecretkey_final_version'
+app.config["SECRET_KEY"] = "supersecretkey_final_version"
 
-# --- 웹사이트 전체 HTML (물리적 줄바꿈   적용 버전) ---
+# =========================
+# 웹사이트 HTML
+# =========================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -26,8 +23,9 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OverView - 원격 제어 솔루션</title>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
         :root {
             --bg-color: #0a0e27;
             --frame-bg: #1a1f3a;
@@ -38,221 +36,214 @@ HTML_TEMPLATE = """
             --border-color: #2a3f7f;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
         body {
-            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            font-family: 'Poppins','Noto Sans KR',sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.8;
         }
         .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
         header {
-            background: rgba(10, 14, 39, 0.8);
+            position: fixed; top: 0; width: 100%;
+            background: rgba(10,14,39,0.85);
             backdrop-filter: blur(10px);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
             border-bottom: 1px solid var(--border-color);
+            z-index: 100;
         }
-        .navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
-        .logo { font-size: 28px; font-weight: 700; color: var(--primary-neon); text-shadow: 0 0 8px rgba(100, 181, 246, 0.7); cursor: pointer; text-decoration: none; }
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            height: 70px;
+        }
+        .logo {
+            font-size: 28px; font-weight: 700;
+            color: var(--primary-neon);
+            text-decoration: none;
+        }
         .nav-menu { list-style: none; display: flex; }
         .nav-menu li { margin-left: 30px; }
-        .nav-menu a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 5px 0; border-bottom: 2px solid transparent; }
-        .nav-menu a:hover { color: var(--primary-neon); text-shadow: 0 0 3px var(--primary-neon); border-bottom-color: var(--primary-neon); }
-        .section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
-        .section:last-child { border-bottom: none; }
-        .section-title { font-size: 42px; font-weight: 700; text-align: center; margin-bottom: 60px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
-        #hero { height: 100vh; min-height: 700px; display: flex; justify-content: center; align-items: center; text-align: center; }
-        .hero-content { max-width: 800px; }
-        .hero-content h1 { font-size: 56px; font-weight: 700; color: #fff; line-height: 1.3; margin: 0; }
-        .hero-content .highlight { display: block; font-size: 72px; color: #cce7ff; text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3); margin: 10px 0 25px 0; }
-        .hero-content p { font-size: 18px; max-width: 600px; margin: 0 auto 40px auto; color: var(--text-dark); }
-        .btn { display: inline-block; padding: 15px 35px; background: var(--primary-neon); color: var(--bg-color); font-weight: 700; text-decoration: none; border-radius: 50px; transition: all 0.3s ease; box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
-        #download { padding: 120px 0; }
-        .download-box { background: var(--frame-bg); padding: 50px; border-radius: 15px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 0 30px rgba(26, 31, 58, 0.5); }
-        .download-box h3 { font-size: 28px; margin-bottom: 15px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
-        .download-box p { color: var(--text-dark); margin-bottom: 30px; font-size: 18px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .card { background: var(--frame-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
-        .card:hover { transform: translateY(-5px); border-color: var(--primary-neon); box-shadow: 0 0 20px rgba(100, 181, 246, 0.2); }
-        .card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
-        .card p { font-size: 15px; color: var(--text-dark); }
-        .card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
-        .feature-card { text-align: center; }
-        .feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
-        .faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
-        .faq-item:last-child { border-bottom: none; }
-        .faq-question { font-size: 18px; font-weight: 600; cursor: pointer; position: relative; padding-right: 30px; }
-        .faq-question::after { content: '+'; position: absolute; right: 0; font-size: 24px; color: var(--primary-neon); transition: transform 0.3s; }
-        .faq-item.active .faq-question::after { transform: rotate(45deg); }
-        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; padding-top: 0; color: var(--text-dark); }
-        .faq-item.active .faq-answer { padding-top: 15px; }
-        footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
+        .nav-menu a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .section {
+            padding: 120px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .section-title {
+            font-size: 42px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        #hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            text-align: center;
+        }
+        .hero-content h1 {
+            font-size: 56px;
+            color: #fff;
+        }
+        .highlight {
+            display: block;
+            font-size: 72px;
+            color: #cce7ff;
+            margin: 15px 0 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: var(--primary-neon);
+            color: var(--bg-color);
+            font-weight: 700;
+            border-radius: 50px;
+            text-decoration: none;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
+            gap: 30px;
+        }
+        .card {
+            background: var(--frame-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .card h3 {
+            margin-bottom: 15px;
+            color: var(--secondary-neon);
+        }
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-dark);
+        }
     </style>
 </head>
+
 <body>
-    <header>
-        <nav class="navbar container">
-            <a href="/" class="logo">OverView</a>
-            <ul class="nav-menu">
-                <li><a href="#hero">소개</a></li>
-                <li><a href="#download">다운로드</a></li>
-                <li><a href="#features">주요 기능</a></li>
-                <li><a href="#how-to">사용법</a></li>
-                <li><a href="#faq">FAQ</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section id="hero">
-            <div class="hero-content">
-                <h1>가장 직관적인 원격 제어 솔루션,
-                    <span class="highlight">OverView</span>
-                </h1>
-                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요.
-OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 기준을 제시합니다.</p>
-            </div>
-        </section>
+<header>
+    <nav class="navbar container">
+        <a href="/" class="logo">OverView</a>
+        <ul class="nav-menu">
+            <li><a href="#hero">소개</a></li>
+            <li><a href="#download">다운로드</a></li>
+            <li><a href="#features">기능</a></li>
+            <li><a href="#details">상세 설명</a></li>
+        </ul>
+    </nav>
+</header>
 
-        <section id="download" class="section">
-            <div class="container">
-                <div class="download-box">
-                    <h3>지금 바로 OverView를 경험해보세요</h3>
-                    <p>최신 버전의 클라이언트 프로그램을 다운로드하여 설치하세요.</p>
-                    <a href="/download" class="btn">OverView 다운로드</a>
-                </div>
-            </div>
-        </section>
+<main>
+<section id="hero">
+    <div class="container hero-content">
+        <h1>가장 직관적인 원격 제어 솔루션
+            <span class="highlight">OverView</span>
+        </h1>
+        <p>여러 대의 PC를 하나의 화면에서 안정적으로 관리하세요.</p>
+    </div>
+</section>
 
-        <section id="features" class="section">
-            <div class="container">
-                <h2 class="section-title">주요 기능</h2>
-                <div class="grid">
-                    <div class="card feature-card">
-                        <div class="icon">🖥️</div> <h3>실시간 화면 공유</h3> <p>지연 시간을 최소화한 고화질 화면 스트리밍으로
-여러 대의 PC를 동시에 모니터링하세요.</p>
-                    </div>
-                    <div class="card feature-card">
-                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격지 PC의 키보드와 마우스를
-완벽하게 제어할 수 있습니다.</p>
-                    </div>
-                    <div class="card feature-card">
-                        <div class="icon">📋</div> <h3>양방향 클립보드</h3> <p>내 PC에서 복사한 텍스트를 원격 PC에 붙여넣거나,
-그 반대의 작업도 자유롭게 수행하세요.</p>
-                    </div>
-                    <div class="card feature-card">
-                        <div class="icon">🔊</div> <h3>실시간 사운드</h3> <p>원격 PC에서 재생되는 사운드를
-내 PC에서 실시간으로 들으며 작업할 수 있습니다.</p>
-                    </div>
-                    <div class="card feature-card">
-                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>메뉴를 통해 원격 PC와 파일을
-손쉽게 주고받을 수 있습니다.</p>
-                    </div>
-                    <div class="card feature-card">
-                        <div class="icon">📊</div> <h3>시스템 모니터링</h3> <p>CPU, 메모리 사용량, 디스크 공간 등
-원격 PC의 핵심 시스템 정보를 실시간으로 확인합니다.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+<section id="download" class="section">
+    <div class="container" style="text-align:center;">
+        <h2 class="section-title">다운로드</h2>
+        <a href="/download" class="btn">최신 버전 다운로드</a>
+    </div>
+</section>
 
-        <section id="how-to" class="section">
-            <div class="container">
-                <h2 class="section-title">기본 사용법</h2>
-                <div class="grid">
-                    <div class="card">
-                        <div class="step-number">01</div> <h3>연결 설정</h3> <p>클라이언트 프로그램을 실행하고, 제어 PC의 IP 주소를 입력합니다.
-식별하기 쉬운 '이 PC 이름'을 설정한 후 '연결 시작' 버튼을 누르세요.</p>
-                    </div>
-                    <div class="card">
-                        <div class="step-number">02</div> <h3>백그라운드 실행</h3> <p>연결이 시작되면 프로그램 창은 자동으로 사라지고,
-작업 표시줄 트레이 아이콘으로 최소화됩니다.
-이제 제어 PC에서 원격 관리를 시작할 수 있습니다.</p>
-                    </div>
-                    <div class="card">
-                        <div class="step-number">03</div> <h3>제어권 관리</h3> <p>여러 매니저가 동시에 접속한 경우,
-오직 한 명의 매니저만 '제어 모드'로 전환하여 PC를 조작할 수 있습니다.
-이는 입력 충돌을 방지하기 위한 기능입니다.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="faq" class="section">
-            <div class="container">
-                <h2 class="section-title">자주 묻는 질문</h2>
-                <div class="faq-container">
-                    <div class="faq-item">
-                        <div class="faq-question">Q. 프로그램을 실행했지만 오류가 발생하며 작동하지 않습니다.</div>
-                        <div class="faq-answer"> <p>A. 프로그램 실행에 필요한 시스템 드라이버가 설치되지 않았거나
-다른 문제일 수 있습니다. <strong>문제를 직접 해결하려고 시도하지 마시고,
-즉시 시스템 관리자에게 문의하여 지원을 받으시기 바랍니다.</strong></p> </div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">Q. 연결이 되지 않거나 자꾸 끊어집니다.</div>
-                        <div class="faq-answer"> <p>A. 먼저 제어 PC(매니저)의 IP 주소가 정확한지 확인해주세요.
-또한, 클라이언트 PC와 제어 PC가 동일한 네트워크에 있는지,
-방화벽이 포트 443을 차단하고 있지는 않은지 확인해야 합니다.</p> </div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">Q. 제어권은 어떻게 얻나요?</div>
-                        <div class="faq-answer"> <p>A. 제어권은 제어 PC(매니저) 프로그램에서 설정할 수 있습니다.
-여러 클라이언트 화면 중 제어하고 싶은 PC를 선택하고
-'제어 모드'로 전환하면 해당 PC의 제어권을 획득하게 됩니다.</p> </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 OverView. All Rights Reserved.</p>
+<section id="features" class="section">
+    <div class="container">
+        <h2 class="section-title">주요 기능 요약</h2>
+        <div class="grid">
+            <div class="card"><h3>실시간 화면 공유</h3><p>다중 PC 화면을 동시에 모니터링</p></div>
+            <div class="card"><h3>원격 키보드 / 마우스</h3><p>지연 없는 입력 전달</p></div>
+            <div class="card"><h3>파일 전송</h3><p>단일·다중 PC 파일 배포</p></div>
         </div>
-    </footer>
+    </div>
+</section>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const faqItems = document.querySelectorAll('.faq-item');
-            faqItems.forEach(item => {
-                const question = item.querySelector('.faq-question');
-                question.addEventListener('click', () => {
-                    const isActive = item.classList.contains('active');
-                    faqItems.forEach(other => {
-                        other.classList.remove('active');
-                        other.querySelector('.faq-answer').style.maxHeight = '0';
-                    });
-                    if (!isActive) {
-                        item.classList.add('active');
-                        const answer = item.querySelector('.faq-answer');
-                        answer.style.maxHeight = answer.scrollHeight + 'px';
-                    }
-                });
-            });
-        });
-    </script>
+<!-- 🔥 여기서부터 추가된 상세 설명 섹션 -->
+<section id="details" class="section">
+    <div class="container">
+        <h2 class="section-title">OverView 상세 기능 안내</h2>
+
+        <div class="grid">
+            <div class="card">
+                <h3>🖥️ 다중 PC 실시간 모니터링</h3>
+                <p>
+                    여러 클라이언트 PC 화면을 하나의 관리 화면에서 동시에 확인할 수 있습니다.
+                    각 PC는 실시간으로 갱신되며 대규모 환경에서도 효율적인 관리가 가능합니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>🖱️ 즉시 원격 제어</h3>
+                <p>
+                    원하는 PC를 선택해 즉시 원격 제어할 수 있으며,
+                    실제 로컬 환경과 유사한 조작감을 제공합니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>🔐 제어권 충돌 방지</h3>
+                <p>
+                    동시에 여러 관리자가 접속하더라도,
+                    단일 사용자만 제어권을 가질 수 있도록 설계되어
+                    입력 충돌을 방지합니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>⌨️ 고급 키보드 입력 처리</h3>
+                <p>
+                    한/영 전환, 한자키, 반복 입력 등
+                    실제 키보드 입력과 최대한 동일한 동작을 지원합니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>📋 양방향 클립보드</h3>
+                <p>
+                    제어 PC와 클라이언트 PC 간 텍스트 복사/붙여넣기를
+                    간편하게 수행할 수 있습니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>📁 파일 전송 및 배포</h3>
+                <p>
+                    단일 또는 다수의 PC에 파일을 전송하여
+                    업데이트 및 설정 배포를 효율적으로 처리할 수 있습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer>
+    <div class="container">
+        <p>© 2026 OverView. All Rights Reserved.</p>
+    </div>
+</footer>
 </body>
 </html>
 """
 
-# --- Flask 라우트(경로) 정의 ---
-
-@app.route('/')
+# =========================
+# Flask 라우트
+# =========================
+@app.route("/")
 def index():
-    """메인 웹페이지를 렌더링합니다."""
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/download')
-def download_file():
-    """다운로드 요청을 GitHub Releases(최신)로 리다이렉트합니다."""
-    # 캐시를 피하려고 간단한 쿼리스트링을 붙입니다.
-    url = DOWNLOAD_URL + f"?v={int(time.time())}"
-    return redirect(url, code=302)
+@app.route("/download")
+def download():
+    # 캐시 방지용 쿼리
+    return redirect(DOWNLOAD_URL + f"?v={int(time.time())}", code=302)
 
-if __name__ == '__main__':
-    # 로컬 테스트 서버 실행
-    print("로컬 테스트 서버를 시작합니다. http://127.0.0.1:5001 에서 접속하세요." )
-    app.run(host='0.0.0.0', port=5001, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001, debug=True)
