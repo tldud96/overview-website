@@ -1,5 +1,5 @@
 import os
-import time # 캐시 무력화를 위해 time 모듈 추가
+import time
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template_string, flash
 from werkzeug.utils import secure_filename
 
@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'supersecretkey_final_version'
 
-# --- 웹사이트 전체 HTML, CSS, JS 코드 ---
+# --- 웹사이트 전체 HTML ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -19,7 +19,6 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OverView - 원격 제어 솔루션</title>
-    <!-- ===== 캐시 무력화를 위해 CSS 링크 방식 변경 ===== -->
     <link rel="stylesheet" href="{{ url_for('static_css') }}?v={{ version }}">
 </head>
 <body>
@@ -222,13 +221,15 @@ header {
     text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3);
     margin: 10px 0 25px 0;
 }
+/* ===== 모든 설명 문단(p)에 줄바꿈 규칙 일괄 적용 ===== */
+p {
+    word-break: keep-all !important;
+}
 .hero-content p {
     font-size: 18px;
     max-width: 600px;
     margin: 0 auto 40px auto;
     color: var(--text-dark);
-    /* ===== 강력한 줄바꿈 규칙 적용 ===== */
-    word-break: keep-all !important;
 }
 .btn {
     display: inline-block;
@@ -265,7 +266,6 @@ header {
     margin-bottom: 30px;
     font-size: 18px;
 }
-.download-box .btn { transform: scale(1.1); font-size: 18px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
 .card {
     background: var(--frame-bg);
@@ -319,7 +319,6 @@ footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
 @app.route('/')
 def index():
     """메인 웹페이지를 렌더링합니다."""
-    # 템플릿에 버전 정보를 전달하여 캐시를 무력화합니다.
     return render_template_string(HTML_TEMPLATE, version=time.time())
 
 @app.route('/static/style.css')
