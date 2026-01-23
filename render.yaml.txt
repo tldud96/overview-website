@@ -1,0 +1,13 @@
+# render.yaml
+# OverView 웹사이트를 위한 Render 설정 파일
+
+services:
+  - type: web
+    name: overview-website
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
