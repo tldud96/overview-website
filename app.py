@@ -2,9 +2,8 @@ import os
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template_string, flash
 from werkzeug.utils import secure_filename
 
-# --- 설정 ---
-# Render.com의 디스크 Mount Path와 로컬 환경을 모두 고려합니다.
 UPLOAD_FOLDER = os.getcwd()
+# 프로그램 파일명을 'OverView.zip'으로 변경합니다.
 PROGRAM_FILENAME = 'OverView.zip'
 ALLOWED_EXTENSIONS = {'zip'}
 
@@ -406,5 +405,6 @@ if __name__ == '__main__':
     # 로컬 테스트 서버 실행
     print("로컬 테스트 서버를 시작합니다. https://127.0.0.1:5001 에서 접속하세요." )
     app.run(host='0.0.0.0', port=5001, debug=True, ssl_context='adhoc')
+
 
 
