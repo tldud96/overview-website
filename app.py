@@ -1,14 +1,17 @@
 import os
+import time
 from flask import Flask, render_template_string, redirect
 
 # --- 설정 ---
 UPLOAD_FOLDER = os.getcwd()
 PROGRAM_FILENAME = 'OverView.zip'
 
-# GitHub Releases에서 최신 파일을 받도록 리다이렉트합니다.
+# =========================
+# GitHub Releases 최신 파일로 다운로드(177MB 이상 대응)
+# =========================
 GITHUB_OWNER = 'tldud96'
 GITHUB_REPO = 'overview-website'
-RELEASE_ASSET_NAME = PROGRAM_FILENAME  # 릴리스에 업로드한 파일명과 동일해야 합니다.
+RELEASE_ASSET_NAME = PROGRAM_FILENAME  # 릴리스에 업로드한 파일명과 동일해야 함
 DOWNLOAD_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest/download/{RELEASE_ASSET_NAME}"
 
 app = Flask(__name__)
@@ -20,478 +23,212 @@ HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OverView - Remote Control Program</title>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OverView - 원격 제어 솔루션</title>
     <style>
-        /* =========================
-           Base / Reset
-        ========================== */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
         :root {
-            --bg: #0b0e14;
-            --bg2: #0f1420;
-            --card: rgba(255, 255, 255, 0.06);
-            --card2: rgba(255, 255, 255, 0.10);
-            --text: #e9eefc;
-            --muted: rgba(233, 238, 252, 0.72);
-            --muted2: rgba(233, 238, 252, 0.55);
-            --brand: #6c7cff;
-            --brand2: #9b5cff;
-            --ok: #38d996;
-            --warn: #ffcc66;
-            --border: rgba(255, 255, 255, 0.10);
-            --shadow: 0 20px 60px rgba(0,0,0,0.35);
+            --bg-color: #0a0e27;
+            --frame-bg: #1a1f3a;
+            --primary-neon: #64b5f6;
+            --secondary-neon: #4dffaf;
+            --text-color: #e0e0e0;
+            --text-dark: #a0a0a0;
+            --border-color: #2a3f7f;
         }
-
-        * { box-sizing: border-box; }
-        html, body { height: 100%; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
-            margin: 0;
-            font-family: 'Jost', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-            color: var(--text);
-            background: radial-gradient(1200px 700px at 10% 0%, rgba(108,124,255,0.35), transparent 60%),
-                        radial-gradient(900px 600px at 100% 10%, rgba(155,92,255,0.30), transparent 55%),
-                        linear-gradient(180deg, var(--bg), var(--bg2));
-            overflow-x: hidden;
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.8;
         }
-
-        a { color: inherit; text-decoration: none; }
-        .container {
-            width: min(1160px, 92vw);
-            margin: 0 auto;
-        }
-
-        /* =========================
-           Top Nav
-        ========================== */
-        .nav {
-            position: sticky;
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+        header {
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
             top: 0;
-            z-index: 50;
-            backdrop-filter: blur(12px);
-            background: rgba(11, 14, 20, 0.55);
-            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
         }
-        .nav-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 0;
-        }
-        .logo {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            font-family: 'Space Grotesk', sans-serif;
-            letter-spacing: 0.2px;
-        }
-        .logo-badge {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(108,124,255,1), rgba(155,92,255,1));
-            box-shadow: 0 10px 22px rgba(108,124,255,0.25);
-        }
-        .nav-links {
-            display: flex;
-            gap: 18px;
-            align-items: center;
-            color: var(--muted);
-            font-weight: 500;
-        }
-        .nav-links a {
-            padding: 8px 10px;
-            border-radius: 10px;
-            transition: 0.2s ease;
-        }
-        .nav-links a:hover {
-            background: rgba(255,255,255,0.06);
-            color: var(--text);
-        }
-
-        /* =========================
-           Hero
-        ========================== */
-        .hero {
-            padding: 70px 0 34px;
-        }
-        .hero-grid {
-            display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
-            gap: 34px;
-            align-items: center;
-        }
-        .headline {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(36px, 4.2vw, 56px);
-            line-height: 1.02;
-            margin: 0 0 16px;
-        }
-        .subhead {
-            font-size: 18px;
-            color: var(--muted);
-            margin: 0 0 28px;
-            line-height: 1.6;
-        }
-        .cta-row {
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 13px 18px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.06);
-            color: var(--text);
-            font-weight: 600;
-            transition: 0.2s ease;
-            cursor: pointer;
-            user-select: none;
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            background: rgba(255,255,255,0.09);
-        }
-        .btn.primary {
-            border: none;
-            background: linear-gradient(135deg, rgba(108,124,255,1), rgba(155,92,255,1));
-            box-shadow: 0 18px 40px rgba(108,124,255,0.26);
-        }
-        .btn.primary:hover {
-            box-shadow: 0 22px 55px rgba(108,124,255,0.35);
-        }
-        .pill {
-            display: inline-flex;
-            gap: 10px;
-            align-items: center;
-            padding: 8px 12px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.04);
-            color: var(--muted);
-            font-weight: 500;
-            margin-bottom: 14px;
-            width: fit-content;
-        }
-        .pill-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 99px;
-            background: var(--ok);
-            box-shadow: 0 0 0 4px rgba(56,217,150,0.15);
-        }
-
-        /* Hero right card */
-        .hero-card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-        .hero-card-top {
-            padding: 18px 18px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        .hero-card-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 16px;
-            margin: 0;
-        }
-        .hero-card-tag {
-            font-size: 13px;
-            color: var(--muted2);
-            margin-top: 6px;
-        }
-        .mini-badges {
-            display: flex;
-            gap: 8px;
-        }
-        .mini {
-            width: 12px;
-            height: 12px;
-            border-radius: 99px;
-            background: rgba(255,255,255,0.14);
-        }
-        .hero-card-body {
-            padding: 18px;
-            display: grid;
-            gap: 12px;
-        }
-        .stat {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-        .stat strong { font-size: 15px; }
-        .stat span { font-size: 14px; color: var(--muted); }
-
-        /* =========================
-           Sections
-        ========================== */
-        .section {
-            padding: 42px 0;
-        }
-        .section h2 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
-            margin: 0 0 10px;
-        }
-        .section p.lead {
-            margin: 0 0 22px;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        /* Feature grid */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-        .card {
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.05);
-            border-radius: 18px;
-            padding: 18px;
-            transition: 0.2s ease;
-        }
-        .card:hover {
-            transform: translateY(-2px);
-            background: rgba(255,255,255,0.07);
-        }
-        .icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(135deg, rgba(108,124,255,0.20), rgba(155,92,255,0.20));
-            border: 1px solid rgba(108,124,255,0.25);
-            margin-bottom: 12px;
-        }
-        .card h3 {
-            margin: 0 0 8px;
-            font-size: 18px;
-        }
-        .card p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.55;
-        }
-
-        /* FAQ */
-        .faq {
-            display: grid;
-            gap: 10px;
-        }
-        details {
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.04);
-            border-radius: 16px;
-            padding: 14px 16px;
-        }
-        summary {
-            cursor: pointer;
-            font-weight: 600;
-            list-style: none;
-        }
-        summary::-webkit-details-marker { display: none; }
-        details p {
-            margin: 10px 0 0;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        /* Footer */
-        .footer {
-            padding: 36px 0 60px;
-            color: var(--muted2);
-            border-top: 1px solid var(--border);
-            margin-top: 30px;
-        }
-        .footer-inner {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        /* Responsive */
-        @media (max-width: 940px) {
-            .hero-grid { grid-template-columns: 1fr; }
-            .grid { grid-template-columns: 1fr; }
-            .nav-links { display: none; }
-        }
+        .navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+        .logo { font-size: 28px; font-weight: 700; color: var(--primary-neon); text-shadow: 0 0 8px rgba(100, 181, 246, 0.7); cursor: pointer; text-decoration: none; }
+        .nav-menu { list-style: none; display: flex; }
+        .nav-menu li { margin-left: 30px; }
+        .nav-menu a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: all 0.3s ease; padding: 5px 0; border-bottom: 2px solid transparent; }
+        .nav-menu a:hover { color: var(--primary-neon); text-shadow: 0 0 3px var(--primary-neon); border-bottom-color: var(--primary-neon); }
+        .section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
+        .section:last-child { border-bottom: none; }
+        .section-title { font-size: 42px; font-weight: 700; text-align: center; margin-bottom: 60px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
+        #hero { height: 100vh; min-height: 700px; display: flex; justify-content: center; align-items: center; text-align: center; }
+        .hero-content { max-width: 800px; }
+        .hero-content h1 { font-size: 56px; font-weight: 700; color: #fff; line-height: 1.3; margin: 0; }
+        .hero-content .highlight { display: block; font-size: 72px; color: #cce7ff; text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3); margin: 10px 0 25px 0; }
+        .hero-content p { font-size: 18px; max-width: 600px; margin: 0 auto 40px auto; color: var(--text-dark); }
+        .btn { display: inline-block; padding: 15px 35px; background: var(--primary-neon); color: var(--bg-color); font-weight: 700; text-decoration: none; border-radius: 50px; transition: all 0.3s ease; box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5); }
+        #download { padding: 120px 0; }
+        .download-box { background: var(--frame-bg); padding: 50px; border-radius: 15px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 0 30px rgba(26, 31, 58, 0.5); }
+        .download-box h3 { font-size: 28px; margin-bottom: 15px; color: #fff; text-shadow: 0 0 8px rgba(100, 181, 246, 0.5); }
+        .download-box p { color: var(--text-dark); margin-bottom: 30px; font-size: 18px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: var(--frame-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary-neon); box-shadow: 0 0 20px rgba(100, 181, 246, 0.2); }
+        .card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
+        .card p { font-size: 15px; color: var(--text-dark); }
+        .card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
+        .feature-card { text-align: center; }
+        .feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
+        .faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-question { font-size: 18px; font-weight: 600; cursor: pointer; position: relative; padding-right: 30px; }
+        .faq-question::after { content: '+'; position: absolute; right: 0; font-size: 24px; color: var(--primary-neon); transition: transform 0.3s; }
+        .faq-item.active .faq-question::after { transform: rotate(45deg); }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; padding-top: 0; color: var(--text-dark); }
+        .faq-item.active .faq-answer { padding-top: 15px; }
+        footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
     </style>
 </head>
 <body>
+    <header>
+        <nav class="navbar container">
+            <a href="/" class="logo">OverView</a>
+            <ul class="nav-menu">
+                <li><a href="#hero">소개</a></li>
+                <li><a href="#download">다운로드</a></li>
+                <li><a href="#features">주요 기능</a></li>
+                <li><a href="#how-to">사용법</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="hero">
+            <div class="hero-content">
+                <h1>가장 직관적인 원격 제어 솔루션,
+                    <span class="highlight">OverView</span>
+                </h1>
+                <p>여러 대의 PC를 하나의 화면에서 관리하고, 클릭 한 번으로 즉시 제어하세요.
+OverView는 강력한 성능과 세련된 인터페이스로 원격 관리의 새로운 기준을 제시합니다.</p>
+            </div>
+        </section>
 
-    <!-- NAV -->
-    <div class="nav">
-        <div class="container nav-inner">
-            <div class="logo">
-                <div class="logo-badge"></div>
-                <div>
-                    <div style="font-size:15px; font-weight:700;">OverView</div>
-                    <div style="font-size:12px; color: var(--muted2); margin-top:2px;">Remote Control Program</div>
+        <section id="download" class="section">
+            <div class="container">
+                <div class="download-box">
+                    <h3>지금 바로 OverView를 경험해보세요</h3>
+                    <p>최신 버전의 클라이언트 프로그램을 다운로드하여 설치하세요.</p>
+                    <a href="/download" class="btn">OverView 다운로드</a>
                 </div>
             </div>
+        </section>
 
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#faq">FAQ</a>
-                <a href="#download">Download</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- HERO -->
-    <div class="hero">
-        <div class="container hero-grid">
-            <div>
-                <div class="pill">
-                    <div class="pill-dot"></div>
-                    <div>항상 최신 버전 유지 · 자동 업데이트</div>
-                </div>
-
-                <h1 class="headline">Fast, Stable,<br/>Remote Control Experience</h1>
-
-                <p class="subhead">
-                    OverView는 여러 대의 PC를 효율적으로 관리하고 원격 제어할 수 있도록 설계된 프로그램입니다.
-                    안정적인 연결, 직관적인 UI, 빠른 반응 속도를 제공합니다.
-                </p>
-
-                <div class="cta-row" id="download">
-                    <a class="btn primary" href="/download">
-                        <span>⬇</span> 다운로드
-                    </a>
-                    <a class="btn" href="#features">기능 보기</a>
-                </div>
-
-                <div style="margin-top:14px; color: var(--muted2); font-size: 13px;">
-                    * 다운로드 버튼을 누르면 최신 파일을 받습니다.
-                </div>
-            </div>
-
-            <div class="hero-card">
-                <div class="hero-card-top">
-                    <div>
-                        <p class="hero-card-title">Status</p>
-                        <div class="hero-card-tag">Production-ready</div>
+        <section id="features" class="section">
+            <div class="container">
+                <h2 class="section-title">주요 기능</h2>
+                <div class="grid">
+                    <div class="card feature-card">
+                        <div class="icon">🖥️</div> <h3>실시간 화면 공유</h3> <p>지연 시간을 최소화한 고화질 화면 스트리밍으로
+여러 대의 PC를 동시에 모니터링하세요.</p>
                     </div>
-                    <div class="mini-badges">
-                        <div class="mini"></div>
-                        <div class="mini"></div>
-                        <div class="mini"></div>
+                    <div class="card feature-card">
+                        <div class="icon">🖱️</div> <h3>원격 키보드/마우스</h3> <p>내 PC를 조작하듯, 원격지 PC의 키보드와 마우스를
+완벽하게 제어할 수 있습니다.</p>
+                    </div>
+                    <div class="card feature-card">
+                        <div class="icon">📋</div> <h3>양방향 클립보드</h3> <p>내 PC에서 복사한 텍스트를 원격 PC에 붙여넣거나,
+그 반대의 작업도 자유롭게 수행하세요.</p>
+                    </div>
+                    <div class="card feature-card">
+                        <div class="icon">🔊</div> <h3>실시간 사운드</h3> <p>원격 PC에서 재생되는 사운드를
+내 PC에서 실시간으로 들으며 작업할 수 있습니다.</p>
+                    </div>
+                    <div class="card feature-card">
+                        <div class="icon">📁</div> <h3>파일 전송</h3> <p>메뉴를 통해 원격 PC와 파일을
+손쉽게 주고받을 수 있습니다.</p>
+                    </div>
+                    <div class="card feature-card">
+                        <div class="icon">📊</div> <h3>시스템 모니터링</h3> <p>CPU, 메모리 사용량, 디스크 공간 등
+원격 PC의 핵심 시스템 정보를 실시간으로 확인합니다.</p>
                     </div>
                 </div>
-                <div class="hero-card-body">
-                    <div class="stat"><strong>Latency</strong><span>Low</span></div>
-                    <div class="stat"><strong>Multi-Client</strong><span>Supported</span></div>
-                    <div class="stat"><strong>Security</strong><span>Auth & Roles</span></div>
-                    <div class="stat"><strong>Update</strong><span>Auto Deploy</span></div>
+            </div>
+        </section>
+
+        <section id="how-to" class="section">
+            <div class="container">
+                <h2 class="section-title">기본 사용법</h2>
+                <div class="grid">
+                    <div class="card">
+                        <div class="step-number">01</div> <h3>연결 설정</h3> <p>클라이언트 프로그램을 실행하고, 제어 PC의 IP 주소를 입력합니다.
+식별하기 쉬운 '이 PC 이름'을 설정한 후 '연결 시작' 버튼을 누르세요.</p>
+                    </div>
+                    <div class="card">
+                        <div class="step-number">02</div> <h3>백그라운드 실행</h3> <p>연결이 시작되면 프로그램 창은 자동으로 사라지고,
+작업 표시줄 트레이 아이콘으로 최소화됩니다.
+이제 제어 PC에서 원격 관리를 시작할 수 있습니다.</p>
+                    </div>
+                    <div class="card">
+                        <div class="step-number">03</div> <h3>제어권 관리</h3> <p>여러 매니저가 동시에 접속한 경우,
+오직 한 명의 매니저만 '제어 모드'로 전환하여 PC를 조작할 수 있습니다.
+이는 입력 충돌을 방지하기 위한 기능입니다.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- FEATURES -->
-    <div class="section" id="features">
+        <section id="faq" class="section">
+            <div class="container">
+                <h2 class="section-title">자주 묻는 질문</h2>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <div class="faq-question">Q. 프로그램을 실행했지만 오류가 발생하며 작동하지 않습니다.</div>
+                        <div class="faq-answer"> <p>A. 프로그램 실행에 필요한 시스템 드라이버가 설치되지 않았거나
+다른 문제일 수 있습니다. <strong>문제를 직접 해결하려고 시도하지 마시고,
+즉시 시스템 관리자에게 문의하여 지원을 받으시기 바랍니다.</strong></p> </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">Q. 연결이 되지 않거나 자꾸 끊어집니다.</div>
+                        <div class="faq-answer"> <p>A. 먼저 제어 PC(매니저)의 IP 주소가 정확한지 확인해주세요.
+또한, 클라이언트 PC와 제어 PC가 동일한 네트워크에 있는지,
+방화벽이 포트 443을 차단하고 있지는 않은지 확인해야 합니다.</p> </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">Q. 제어권은 어떻게 얻나요?</div>
+                        <div class="faq-answer"> <p>A. 제어권은 제어 PC(매니저) 프로그램에서 설정할 수 있습니다.
+여러 클라이언트 화면 중 제어하고 싶은 PC를 선택하고
+'제어 모드'로 전환하면 해당 PC의 제어권을 획득하게 됩니다.</p> </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
         <div class="container">
-            <h2>주요 기능</h2>
-            <p class="lead">
-                실사용을 기준으로 필요한 기능을 깔끔하게 담았습니다.
-            </p>
-
-            <div class="grid">
-                <div class="card">
-                    <div class="icon">⚡</div>
-                    <h3>빠른 반응 속도</h3>
-                    <p>원격 화면/입력 전달을 최적화하여 지연을 줄였습니다.</p>
-                </div>
-
-                <div class="card">
-                    <div class="icon">🖥️</div>
-                    <h3>다중 PC 관리</h3>
-                    <p>여러 클라이언트를 동시에 관리하고 그룹 단위로 운영할 수 있습니다.</p>
-                </div>
-
-                <div class="card">
-                    <div class="icon">🔒</div>
-                    <h3>로그인 기반 접근</h3>
-                    <p>권한/역할(Role) 기반으로 매니저/클라이언트 구분 운영이 가능합니다.</p>
-                </div>
-            </div>
+            <p>&copy; 2026 OverView. All Rights Reserved.</p>
         </div>
-    </div>
-
-    <!-- FAQ -->
-    <div class="section" id="faq">
-        <div class="container">
-            <h2>FAQ</h2>
-            <p class="lead">자주 묻는 질문을 정리했습니다.</p>
-
-            <div class="faq">
-                <details>
-                    <summary>Q. 다운로드 버튼을 누르면 어떤 파일이 받아지나요?</summary>
-                    <p>항상 최신 버전의 프로그램 zip 파일을 다운로드합니다.</p>
-                </details>
-
-                <details>
-                    <summary>Q. 업데이트는 어떻게 되나요?</summary>
-                    <p>GitHub 저장소 변경사항 또는 릴리스 업데이트 시 최신 파일을 내려받도록 구성할 수 있습니다.</p>
-                </details>
-
-                <details>
-                    <summary>Q. 설치가 필요한가요?</summary>
-                    <p>배포 형태에 따라 다르며, 일반적으로 zip을 풀고 실행하면 됩니다.</p>
-                </details>
-            </div>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-        <div class="container footer-inner">
-            <div>© OverView</div>
-            <div style="display:flex; gap:10px;">
-                <a href="#features">Features</a>
-                <a href="#faq">FAQ</a>
-                <a href="#download">Download</a>
-            </div>
-        </div>
-    </div>
+    </footer>
 
     <script>
-        // FAQ 아코디언 애니메이션을 조금 더 부드럽게
         document.addEventListener('DOMContentLoaded', () => {
-            const details = document.querySelectorAll('details');
-            details.forEach(d => {
-                d.addEventListener('toggle', () => {
-                    if (d.open) {
-                        details.forEach(other => {
-                            if (other !== d) other.open = false;
-                        });
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    const isActive = item.classList.contains('active');
+                    faqItems.forEach(other => {
+                        other.classList.remove('active');
+                        other.querySelector('.faq-answer').style.maxHeight = '0';
+                    });
+                    if (!isActive) {
+                        item.classList.add('active');
+                        const answer = item.querySelector('.faq-answer');
+                        answer.style.maxHeight = answer.scrollHeight + 'px';
                     }
                 });
             });
@@ -511,7 +248,9 @@ def index():
 @app.route('/download')
 def download_file():
     """다운로드 요청을 GitHub Releases(최신)로 리다이렉트합니다."""
-    return redirect(DOWNLOAD_URL, code=302)
+    # 캐시를 피하려고 간단한 쿼리스트링을 붙입니다.
+    url = DOWNLOAD_URL + f"?v={int(time.time())}"
+    return redirect(url, code=302)
 
 if __name__ == '__main__':
     # 로컬 테스트 서버 실행
