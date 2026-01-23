@@ -1,4 +1,5 @@
 import os
+import time # 캐시 무력화를 위해 time 모듈 추가
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template_string, flash
 from werkzeug.utils import secure_filename
 
@@ -18,182 +19,8 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OverView - 원격 제어 솔루션</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
-        :root {
-            --bg-color: #0a0e27;
-            --frame-bg: #1a1f3a;
-            --primary-neon: #64b5f6;
-            --secondary-neon: #4dffaf;
-            --text-color: #e0e0e0;
-            --text-dark: #a0a0a0;
-            --border-color: #2a3f7f;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.8;
-        }
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
-        header {
-            background: rgba(10, 14, 39, 0.8);
-            backdrop-filter: blur(10px);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
-        .logo {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--primary-neon);
-            text-shadow: 0 0 8px rgba(100, 181, 246, 0.7);
-            cursor: pointer;
-        }
-        .nav-menu { list-style: none; display: flex; }
-        .nav-menu li { margin-left: 30px; }
-        .nav-menu a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 5px 0;
-            border-bottom: 2px solid transparent;
-        }
-        .nav-menu a:hover {
-            color: var(--primary-neon);
-            text-shadow: 0 0 3px var(--primary-neon);
-            border-bottom-color: var(--primary-neon);
-        }
-        .section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
-        .section:last-child { border-bottom: none; }
-        .section-title {
-            font-size: 42px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 60px;
-            color: #fff;
-            text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
-        }
-        #hero {
-            height: 100vh;
-            min-height: 700px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        .hero-content { max-width: 800px; }
-        .hero-content h1 {
-            font-size: 56px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.3;
-            margin: 0;
-        }
-        .hero-content .highlight {
-            display: block;
-            font-size: 72px;
-            color: #cce7ff;
-            text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3);
-            margin: 10px 0 25px 0;
-        }
-        .hero-content p {
-            font-size: 18px;
-            max-width: 600px;
-            margin: 0 auto 40px auto;
-            color: var(--text-dark);
-            /* ===== 줄바꿈 문제 해결을 위한 코드 ===== */
-            word-break: keep-all;
-        }
-        .btn {
-            display: inline-block;
-            padding: 15px 35px;
-            background: var(--primary-neon);
-            color: var(--bg-color);
-            font-weight: 700;
-            text-decoration: none;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5);
-        }
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5);
-        }
-        #download { padding: 120px 0; }
-        .download-box {
-            background: var(--frame-bg);
-            padding: 50px;
-            border-radius: 15px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 30px rgba(26, 31, 58, 0.5);
-        }
-        .download-box h3 {
-            font-size: 28px;
-            margin-bottom: 15px;
-            color: #fff;
-            text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
-        }
-        .download-box p {
-            color: var(--text-dark);
-            margin-bottom: 30px;
-            font-size: 18px;
-        }
-        .download-box .btn { transform: scale(1.1); font-size: 18px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .card {
-            background: var(--frame-bg);
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary-neon);
-            box-shadow: 0 0 20px rgba(100, 181, 246, 0.2);
-        }
-        .card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
-        .card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
-        .feature-card { text-align: center; }
-        .feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
-        .feature-card h3 { color: var(--secondary-neon); }
-        .feature-card p { color: var(--text-dark); font-size: 15px; }
-        .faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
-        .faq-item:last-child { border-bottom: none; }
-        .faq-question {
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            position: relative;
-            padding-right: 30px;
-        }
-        .faq-question::after {
-            content: '+';
-            position: absolute;
-            right: 0;
-            font-size: 24px;
-            color: var(--primary-neon);
-            transition: transform 0.3s;
-        }
-        .faq-item.active .faq-question::after { transform: rotate(45deg); }
-        .faq-answer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-out;
-            padding-top: 0;
-            color: var(--text-dark);
-        }
-        .faq-item.active .faq-answer { padding-top: 15px; }
-        footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
-    </style>
+    <!-- ===== 캐시 무력화를 위해 CSS 링크 방식 변경 ===== -->
+    <link rel="stylesheet" href="{{ url_for('static_css') }}?v={{ version }}">
 </head>
 <body>
     <header>
@@ -309,12 +136,196 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# --- CSS 코드를 별도의 변수로 분리 ---
+CSS_TEMPLATE = """
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap' );
+:root {
+    --bg-color: #0a0e27;
+    --frame-bg: #1a1f3a;
+    --primary-neon: #64b5f6;
+    --secondary-neon: #4dffaf;
+    --text-color: #e0e0e0;
+    --text-dark: #a0a0a0;
+    --border-color: #2a3f7f;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.8;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+header {
+    background: rgba(10, 14, 39, 0.8);
+    backdrop-filter: blur(10px);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border-color);
+}
+.navbar { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+.logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-neon);
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.7);
+    cursor: pointer;
+}
+.nav-menu { list-style: none; display: flex; }
+.nav-menu li { margin-left: 30px; }
+.nav-menu a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 5px 0;
+    border-bottom: 2px solid transparent;
+}
+.nav-menu a:hover {
+    color: var(--primary-neon);
+    text-shadow: 0 0 3px var(--primary-neon);
+    border-bottom-color: var(--primary-neon);
+}
+.section { padding: 120px 0; border-bottom: 1px solid var(--border-color); }
+.section:last-child { border-bottom: none; }
+.section-title {
+    font-size: 42px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 60px;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+}
+#hero {
+    height: 100vh;
+    min-height: 700px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.hero-content { max-width: 800px; }
+.hero-content h1 {
+    font-size: 56px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin: 0;
+}
+.hero-content .highlight {
+    display: block;
+    font-size: 72px;
+    color: #cce7ff;
+    text-shadow: 0 0 5px rgba(100, 181, 246, 0.7), 0 0 12px rgba(100, 181, 246, 0.5), 0 0 25px rgba(100, 181, 246, 0.3);
+    margin: 10px 0 25px 0;
+}
+.hero-content p {
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 auto 40px auto;
+    color: var(--text-dark);
+    /* ===== 강력한 줄바꿈 규칙 적용 ===== */
+    word-break: keep-all !important;
+}
+.btn {
+    display: inline-block;
+    padding: 15px 35px;
+    background: var(--primary-neon);
+    color: var(--bg-color);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px var(--primary-neon), inset 0 0 5px rgba(255,255,255,0.5);
+}
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px var(--primary-neon), 0 0 40px var(--secondary-neon), inset 0 0 5px rgba(255,255,255,0.5);
+}
+#download { padding: 120px 0; }
+.download-box {
+    background: var(--frame-bg);
+    padding: 50px;
+    border-radius: 15px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0 30px rgba(26, 31, 58, 0.5);
+}
+.download-box h3 {
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+}
+.download-box p {
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    font-size: 18px;
+}
+.download-box .btn { transform: scale(1.1); font-size: 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+.card {
+    background: var(--frame-bg);
+    padding: 30px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-neon);
+    box-shadow: 0 0 20px rgba(100, 181, 246, 0.2);
+}
+.card h3 { font-size: 22px; color: var(--secondary-neon); margin-bottom: 15px; }
+.card .step-number { font-size: 28px; font-weight: 700; color: var(--border-color); margin-bottom: 10px; }
+.feature-card { text-align: center; }
+.feature-card .icon { font-size: 48px; margin-bottom: 20px; color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-neon); }
+.feature-card h3 { color: var(--secondary-neon); }
+.feature-card p { color: var(--text-dark); font-size: 15px; }
+.faq-item { border-bottom: 1px solid var(--border-color); padding: 20px 0; }
+.faq-item:last-child { border-bottom: none; }
+.faq-question {
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    padding-right: 30px;
+}
+.faq-question::after {
+    content: '+';
+    position: absolute;
+    right: 0;
+    font-size: 24px;
+    color: var(--primary-neon);
+    transition: transform 0.3s;
+}
+.faq-item.active .faq-question::after { transform: rotate(45deg); }
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+    padding-top: 0;
+    color: var(--text-dark);
+}
+.faq-item.active .faq-answer { padding-top: 15px; }
+footer { text-align: center; padding: 40px 0; color: var(--text-dark); }
+"""
+
 # --- Flask 라우트(경로) 정의 ---
 
 @app.route('/')
 def index():
     """메인 웹페이지를 렌더링합니다."""
-    return render_template_string(HTML_TEMPLATE)
+    # 템플릿에 버전 정보를 전달하여 캐시를 무력화합니다.
+    return render_template_string(HTML_TEMPLATE, version=time.time())
+
+@app.route('/static/style.css')
+def static_css():
+    """CSS 코드를 별도의 경로로 제공합니다."""
+    return app.response_class(CSS_TEMPLATE, mimetype='text/css')
 
 @app.route('/download')
 def download_file():
@@ -322,6 +333,6 @@ def download_file():
     return send_from_directory(app.config['UPLOAD_FOLDER'], PROGRAM_FILENAME, as_attachment=True)
 
 if __name__ == '__main__':
-    # 로컬 테스트 서버 실행 (이 부분은 Render.com에서는 사용되지 않습니다)
+    # 로컬 테스트 서버 실행
     print("로컬 테스트 서버를 시작합니다. http://127.0.0.1:5001 에서 접속하세요." )
     app.run(host='0.0.0.0', port=5001, debug=True)
