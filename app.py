@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from flask import Flask, render_template_string, redirect, jsonify, request
+from flask import Flask, render_template_string, redirect, jsonify, request, send_file
 from datetime import datetime, timedelta
 import random
 
@@ -38,7 +38,7 @@ def get_system_status():
     ]
 
 # =========================
-# 웹사이트 HTML (Glassmorphism + Zen Blue)
+# 웹사이트 HTML (OverView 프로그램 스타일)
 # =========================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -51,7 +51,7 @@ HTML_TEMPLATE = """
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
 
         * {
             margin: 0;
@@ -60,68 +60,57 @@ HTML_TEMPLATE = """
         }
 
         :root {
-            --primary-blue: #0057FF;
-            --cyan-accent: #00D1FF;
-            --bg-light: #FFFFFF;
-            --bg-soft: #F8FAFC;
-            --text-dark: #1F2937;
-            --text-muted: #6B7280;
-            --border-light: #E5E7EB;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-blur: 10px;
+            --dark-bg: #0F1419;
+            --dark-panel: #1A1F2E;
+            --dark-hover: #252D3D;
+            --accent-blue: #00A8E8;
+            --accent-cyan: #00D9FF;
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0A0;
+            --border-color: #2A3548;
+            --status-online: #00FF41;
+            --status-offline: #FF4444;
         }
 
         body {
-            font-family: 'Noto Sans KR', 'Poppins', sans-serif;
-            background: linear-gradient(to bottom, #FFFFFF, rgba(219, 234, 254, 0.3), #FFFFFF);
-            color: var(--text-dark);
+            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }
 
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
-            font-weight: 700;
+            font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+            font-weight: 500;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px;
         }
 
-        /* ========== Navigation ========== */
+        /* ========== Header ========== */
         header {
-            position: fixed;
+            background-color: var(--dark-panel);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 0;
+            position: sticky;
             top: 0;
-            width: 100%;
             z-index: 100;
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.7);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
         }
 
-        header.scrolled {
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 8px 32px rgba(0, 87, 255, 0.08);
-        }
-
-        .navbar {
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 70px;
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            background: linear-gradient(to right, var(--primary-blue), var(--cyan-accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--accent-blue);
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -129,328 +118,268 @@ HTML_TEMPLATE = """
         }
 
         .logo i {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--cyan-accent));
-            border-radius: 8px;
+            font-size: 24px;
+        }
+
+        .nav-right {
             display: flex;
+            gap: 16px;
             align-items: center;
-            justify-content: center;
-            color: white;
-            -webkit-background-clip: unset;
-            -webkit-text-fill-color: unset;
-            background-clip: unset;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 32px;
-        }
-
-        .nav-menu a {
-            color: var(--text-dark);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
-        }
-
-        .nav-menu a:hover {
-            color: var(--primary-blue);
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 12px;
         }
 
         .btn {
-            padding: 10px 24px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
+            padding: 8px 20px;
+            border: 1px solid var(--border-color);
+            background-color: transparent;
+            color: var(--text-primary);
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
+            font-size: 13px;
+            transition: all 0.2s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background-color: var(--dark-hover);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
         }
 
         .btn-primary {
-            background: linear-gradient(to right, var(--primary-blue), var(--cyan-accent));
-            color: white;
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: var(--dark-bg);
+            font-weight: 500;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(0, 87, 255, 0.3);
+            background-color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
         }
 
-        .btn-secondary {
-            background: transparent;
-            color: var(--primary-blue);
-            border: 1px solid rgba(0, 87, 255, 0.2);
+        /* ========== Tab Navigation ========== */
+        .tab-nav {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--dark-panel);
+            padding: 0 20px;
         }
 
-        .btn-secondary:hover {
-            background: rgba(0, 87, 255, 0.05);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-            background: none;
+        .tab-item {
+            padding: 12px 24px;
+            background-color: transparent;
             border: none;
-            font-size: 24px;
+            color: var(--text-secondary);
             cursor: pointer;
-            color: var(--text-dark);
+            font-size: 13px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .tab-item:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-item.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* ========== Main Content ========== */
+        main {
+            padding: 24px 0;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            padding: 0 20px;
         }
 
         /* ========== Hero Section ========== */
-        #hero {
-            padding-top: 120px;
-            padding-bottom: 80px;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 209, 255, 0.15), transparent);
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: -1;
-        }
-
-        .hero-bg-2 {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 87, 255, 0.15), transparent);
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: -1;
-        }
-
-        .hero-content {
+        .hero {
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 40px;
+            margin: 0 20px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 60px;
+            gap: 40px;
             align-items: center;
         }
 
         .hero-text h1 {
-            font-size: 56px;
-            line-height: 1.2;
-            margin-bottom: 24px;
-            color: var(--text-dark);
+            font-size: 36px;
+            line-height: 1.3;
+            margin-bottom: 16px;
+            color: var(--text-primary);
         }
 
-        .hero-text h1 .gradient {
-            background: linear-gradient(to right, var(--primary-blue), var(--cyan-accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .hero-text h1 .highlight {
+            color: var(--accent-blue);
         }
 
         .hero-text p {
-            font-size: 18px;
-            color: var(--text-muted);
-            margin-bottom: 32px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
             line-height: 1.8;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .hero-image {
-            position: relative;
-            animation: float 3s ease-in-out infinite;
+            background-color: var(--dark-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
         }
 
-        .hero-image-glass {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 87, 255, 0.1);
-            border-radius: 20px;
-            padding: 8px;
-            box-shadow: 0 20px 48px rgba(0, 87, 255, 0.12);
-        }
-
-        .hero-image-glass img {
-            width: 100%;
+        .hero-image img {
+            max-width: 100%;
             height: auto;
-            border-radius: 16px;
-            display: block;
+            border-radius: 4px;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        /* ========== Features Section ========== */
-        #features {
-            padding: 100px 0;
-            background: linear-gradient(to bottom, transparent, rgba(219, 234, 254, 0.2), transparent);
-        }
-
-        .section-title {
-            font-size: 48px;
-            text-align: center;
-            margin-bottom: 16px;
-            color: var(--text-dark);
-        }
-
-        .section-subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 18px;
-            max-width: 600px;
-            margin: 0 auto 60px;
-        }
-
+        /* ========== Features Grid ========== */
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 0 20px;
         }
 
         .feature-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.3s ease;
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            transition: all 0.2s ease;
             cursor: pointer;
         }
 
         .feature-card:hover {
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px rgba(0, 87, 255, 0.08);
-            border-color: rgba(0, 87, 255, 0.15);
-            transform: translateY(-4px);
+            background-color: var(--dark-hover);
+            border-color: var(--accent-blue);
         }
 
         .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--cyan-accent));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            margin-bottom: 16px;
-            transition: transform 0.3s ease;
-        }
-
-        .feature-card:hover .feature-icon {
-            transform: scale(1.1);
+            font-size: 28px;
+            color: var(--accent-blue);
+            margin-bottom: 12px;
         }
 
         .feature-card h3 {
-            font-size: 20px;
-            margin-bottom: 12px;
-            color: var(--text-dark);
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
         }
 
         .feature-card p {
-            color: var(--text-muted);
-            font-size: 15px;
+            font-size: 13px;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
         /* ========== Dashboard Section ========== */
-        #dashboard {
-            padding: 100px 0;
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            margin-bottom: 16px;
         }
 
         .status-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 16px;
+            padding: 0 20px;
+            margin-bottom: 24px;
         }
 
         .status-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.3s ease;
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 16px;
+            transition: all 0.2s ease;
         }
 
-        .status-card.online:hover {
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px rgba(0, 87, 255, 0.08);
-            border-color: rgba(0, 87, 255, 0.15);
+        .status-card:hover {
+            background-color: var(--dark-hover);
+            border-color: var(--accent-blue);
         }
 
         .status-card.offline {
-            opacity: 0.5;
+            opacity: 0.6;
         }
 
         .status-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .status-name {
-            font-weight: 600;
-            color: var(--text-dark);
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
         }
 
         .status-indicator {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #10B981;
+            background-color: var(--status-online);
         }
 
         .status-indicator.offline {
-            background: #9CA3AF;
+            background-color: var(--status-offline);
         }
 
         .status-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
 
         .status-label {
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
         .status-value {
-            font-weight: 600;
-            color: var(--primary-blue);
+            color: var(--accent-blue);
+            font-weight: 500;
         }
 
         .progress-bar {
             width: 100%;
-            height: 4px;
-            background: rgba(0, 87, 255, 0.1);
+            height: 3px;
+            background-color: var(--dark-hover);
             border-radius: 2px;
             overflow: hidden;
             margin-top: 4px;
@@ -458,168 +387,125 @@ HTML_TEMPLATE = """
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(to right, var(--primary-blue), var(--cyan-accent));
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-cyan));
             border-radius: 2px;
             transition: width 0.3s ease;
         }
 
+        /* ========== Charts Grid ========== */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 32px;
+            gap: 16px;
+            padding: 0 20px;
         }
 
         .chart-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.3s ease;
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            transition: all 0.2s ease;
         }
 
         .chart-card:hover {
-            box-shadow: 0 8px 32px rgba(0, 87, 255, 0.08);
-            border-color: rgba(0, 87, 255, 0.15);
+            background-color: var(--dark-hover);
+            border-color: var(--accent-blue);
         }
 
         .chart-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--text-dark);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-primary);
         }
 
         .chart-container {
             position: relative;
-            height: 280px;
+            height: 250px;
         }
 
-        /* ========== Details Section ========== */
-        #details {
-            padding: 100px 0;
-            background: linear-gradient(to bottom, transparent, rgba(219, 234, 254, 0.2), transparent);
-        }
-
+        /* ========== Details Grid ========== */
         .details-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 32px;
-            max-width: 1000px;
-            margin: 0 auto;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 0 20px;
         }
 
         .detail-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.3s ease;
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            transition: all 0.2s ease;
         }
 
         .detail-card:hover {
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px rgba(0, 87, 255, 0.08);
-            border-color: rgba(0, 87, 255, 0.15);
-            transform: translateY(-4px);
+            background-color: var(--dark-hover);
+            border-color: var(--accent-blue);
         }
 
         .detail-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--cyan-accent), var(--primary-blue));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            margin-bottom: 16px;
+            font-size: 28px;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
         }
 
         .detail-card h3 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            color: var(--text-dark);
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
         }
 
         .detail-card p {
-            color: var(--text-muted);
-            font-size: 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
         /* ========== CTA Section ========== */
-        #cta {
-            padding: 100px 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-bg {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(0, 87, 255, 0.2), transparent);
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: -1;
-        }
-
-        .cta-bg-2 {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(0, 209, 255, 0.2), transparent);
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: -1;
-        }
-
-        .cta-content {
+        .cta-section {
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 40px;
+            margin: 0 20px;
             text-align: center;
         }
 
-        .cta-content h2 {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: var(--text-dark);
+        .cta-section h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
         }
 
-        .cta-content p {
-            font-size: 18px;
-            color: var(--text-muted);
-            margin-bottom: 32px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        .cta-section p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
         }
 
         /* ========== Footer ========== */
         footer {
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.05));
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 60px 0 20px;
-            color: var(--text-muted);
-            font-size: 14px;
+            background-color: var(--dark-panel);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 0;
+            margin-top: 40px;
         }
 
         .footer-content {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-            margin-bottom: 40px;
+            gap: 32px;
+            margin-bottom: 24px;
+            padding: 0 20px;
         }
 
         .footer-section h4 {
-            color: var(--text-dark);
-            margin-bottom: 16px;
-            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 13px;
         }
 
         .footer-section ul {
@@ -631,170 +517,217 @@ HTML_TEMPLATE = """
         }
 
         .footer-section ul li a {
-            color: var(--text-muted);
+            color: var(--text-secondary);
             text-decoration: none;
-            transition: color 0.3s ease;
+            font-size: 12px;
+            transition: color 0.2s ease;
         }
 
         .footer-section ul li a:hover {
-            color: var(--primary-blue);
+            color: var(--accent-blue);
         }
 
         .footer-bottom {
-            border-top: 1px solid rgba(0, 0, 0, 0.05);
-            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
             text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 0 20px;
+        }
+
+        /* ========== Status Bar ========== */
+        .status-bar {
+            background-color: var(--dark-panel);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-bar-left {
+            display: flex;
+            gap: 24px;
+        }
+
+        .status-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-indicator-small {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--status-online);
+        }
+
+        /* ========== QR Code ========== */
+        .qr-code-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .qr-code-container:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 12px 32px rgba(0, 168, 232, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .qr-code-container img {
+            width: 140px;
+            height: 140px;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .qr-label {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* ========== Responsive ========== */
         @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-
-            .nav-buttons {
-                display: none;
-            }
-
-            .mobile-menu-btn {
-                display: block;
-            }
-
-            .hero-content {
+            .hero {
                 grid-template-columns: 1fr;
-                gap: 40px;
             }
 
             .hero-text h1 {
-                font-size: 36px;
-            }
-
-            .hero-buttons {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .section-title {
-                font-size: 32px;
+                font-size: 24px;
             }
 
             .charts-grid {
                 grid-template-columns: 1fr;
             }
 
-            .cta-content h2 {
-                font-size: 32px;
+            .cta-section h2 {
+                font-size: 20px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-code-container {
+                bottom: 80px;
+                right: 10px;
             }
         }
 
         /* ========== Animations ========== */
-        @keyframes fadeInUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
         }
     </style>
 </head>
 
 <body>
 <header>
-    <nav class="navbar container">
+    <div class="container header-content">
         <a href="/" class="logo">
             <i class="fas fa-monitor"></i>
             OverView
         </a>
-        <ul class="nav-menu">
-            <li><a href="#features">기능</a></li>
-            <li><a href="#dashboard">대시보드</a></li>
-            <li><a href="#details">상세 정보</a></li>
-        </ul>
-        <div class="nav-buttons">
-            <button class="btn btn-secondary">로그인</button>
+        <div class="nav-right">
+            <button class="btn">로그인</button>
             <a href="/download" class="btn btn-primary">
                 <i class="fas fa-download"></i>
                 다운로드
             </a>
         </div>
-        <button class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
-    </nav>
+    </div>
 </header>
 
-<main>
-    <!-- Hero Section -->
-    <section id="hero">
-        <div class="hero-bg"></div>
-        <div class="hero-bg-2"></div>
-        <div class="container hero-content fade-in-up">
-            <div class="hero-text">
-                <h1>가장 직관적인<br><span class="gradient">원격 제어 솔루션</span></h1>
-                <p>여러 대의 PC를 하나의 화면에서 안정적으로 관리하세요. 실시간 모니터링, 원격 제어, 파일 전송까지 모든 기능을 한 곳에서.</p>
-                <div class="hero-buttons">
-                    <a href="/download" class="btn btn-primary">
-                        <i class="fas fa-download"></i>
-                        지금 다운로드
-                    </a>
-                    <button class="btn btn-secondary">
-                        <i class="fas fa-play"></i>
-                        데모 보기
-                    </button>
-                </div>
-            </div>
-            <div class="hero-image">
-                <div class="hero-image-glass">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect fill='%23E0F2FE' width='400' height='300'/%3E%3Crect x='20' y='20' width='360' height='260' rx='8' fill='%23FFFFFF' stroke='%230057FF' stroke-width='2'/%3E%3Crect x='40' y='40' width='320' height='40' rx='4' fill='%230057FF' opacity='0.1'/%3E%3Ccircle cx='60' cy='60' r='4' fill='%230057FF'/%3E%3Ccircle cx='80' cy='60' r='4' fill='%230057FF'/%3E%3Ccircle cx='100' cy='60' r='4' fill='%230057FF'/%3E%3Crect x='40' y='100' width='100' height='80' rx='4' fill='%230057FF' opacity='0.2'/%3E%3Crect x='160' y='100' width='100' height='80' rx='4' fill='%2300D1FF' opacity='0.2'/%3E%3Crect x='280' y='100' width='80' height='80' rx='4' fill='%230057FF' opacity='0.15'/%3E%3C/svg%3E" alt="Dashboard Preview">
-                </div>
-            </div>
-        </div>
-    </section>
+<div class="tab-nav">
+    <button class="tab-item active">개요</button>
+    <button class="tab-item">기능</button>
+    <button class="tab-item">대시보드</button>
+    <button class="tab-item">상세 정보</button>
+</div>
 
-    <!-- Features Section -->
-    <section id="features">
-        <div class="container">
+<main>
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="section">
+            <div class="hero fade-in">
+                <div class="hero-text">
+                    <h1>가장 직관적인<br><span class="highlight">원격 제어 솔루션</span></h1>
+                    <p>여러 대의 PC를 하나의 화면에서 안정적으로 관리하세요. 실시간 모니터링, 원격 제어, 파일 전송까지 모든 기능을 한 곳에서.</p>
+                    <div class="hero-buttons">
+                        <a href="/download" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            지금 다운로드
+                        </a>
+                        <button class="btn">
+                            <i class="fas fa-play"></i>
+                            데모 보기
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect fill='%231A1F2E' width='400' height='300'/%3E%3Crect x='20' y='20' width='360' height='260' rx='4' fill='%23252D3D' stroke='%2300A8E8' stroke-width='2'/%3E%3Crect x='40' y='40' width='320' height='40' rx='2' fill='%2300A8E8' opacity='0.2'/%3E%3Ccircle cx='60' cy='60' r='3' fill='%2300A8E8'/%3E%3Ccircle cx='80' cy='60' r='3' fill='%2300A8E8'/%3E%3Ccircle cx='100' cy='60' r='3' fill='%2300A8E8'/%3E%3Crect x='40' y='100' width='100' height='80' rx='2' fill='%2300A8E8' opacity='0.15'/%3E%3Crect x='160' y='100' width='100' height='80' rx='2' fill='%2300D9FF' opacity='0.15'/%3E%3Crect x='280' y='100' width='80' height='80' rx='2' fill='%2300A8E8' opacity='0.1'/%3E%3C/svg%3E" alt="Dashboard Preview">
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="section">
             <h2 class="section-title">강력한 기능들</h2>
-            <p class="section-subtitle">OverView는 원격 관리에 필요한 모든 기능을 제공합니다</p>
             <div class="features-grid">
-                <div class="feature-card fade-in-up">
+                <div class="feature-card fade-in">
                     <div class="feature-icon"><i class="fas fa-desktop"></i></div>
                     <h3>실시간 화면 공유</h3>
                     <p>다중 PC 화면을 동시에 모니터링하고 관리하세요</p>
                 </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.1s;">
+                <div class="feature-card fade-in">
                     <div class="feature-icon"><i class="fas fa-bolt"></i></div>
                     <h3>원격 제어</h3>
                     <p>지연 없는 키보드와 마우스 입력으로 즉시 제어</p>
                 </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.2s;">
+                <div class="feature-card fade-in">
                     <div class="feature-icon"><i class="fas fa-folder"></i></div>
                     <h3>파일 전송</h3>
                     <p>단일·다중 PC에 파일을 빠르게 배포</p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Dashboard Section -->
-    <section id="dashboard">
-        <div class="container">
-            <h2 class="section-title">인터랙티브 대시보드</h2>
-            <p class="section-subtitle">실시간 시스템 모니터링으로 데이터를 더 직관적으로 탐색하고, 추세를 더 잘 이해하며, 간편히 저장하고 공유하세요</p>
+        <!-- Dashboard Section -->
+        <section class="section">
+            <div class="dashboard-header">
+                <h2 class="section-title" style="margin: 0;">인터랙티브 대시보드</h2>
+            </div>
 
             <!-- System Status Cards -->
             <div class="status-grid">
                 {% for system in system_status %}
-                <div class="status-card {% if system.status == 'online' %}online{% else %}offline{% endif %}">
+                <div class="status-card {% if system.status == 'offline' %}offline{% endif %} fade-in">
                     <div class="status-header">
                         <span class="status-name">{{ system.name }}</span>
                         <div class="status-indicator {% if system.status == 'offline' %}offline{% endif %}"></div>
@@ -820,64 +753,60 @@ HTML_TEMPLATE = """
 
             <!-- Charts -->
             <div class="charts-grid">
-                <div class="chart-card">
+                <div class="chart-card fade-in">
                     <h3 class="chart-title">CPU 사용률 추이</h3>
                     <div class="chart-container">
                         <canvas id="cpuChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card fade-in">
                     <h3 class="chart-title">네트워크 상태</h3>
                     <div class="chart-container">
                         <canvas id="networkChart"></canvas>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Details Section -->
-    <section id="details">
-        <div class="container">
+        <!-- Details Section -->
+        <section class="section">
             <h2 class="section-title">상세 기능 안내</h2>
             <div class="details-grid">
-                <div class="detail-card fade-in-up">
+                <div class="detail-card fade-in">
                     <div class="detail-icon"><i class="fas fa-desktop"></i></div>
                     <h3>다중 PC 실시간 모니터링</h3>
-                    <p>여러 클라이언트 PC 화면을 하나의 관리 화면에서 동시에 확인할 수 있습니다. 각 PC는 실시간으로 갱신되며 대규모 환경에서도 효율적인 관리가 가능합니다.</p>
+                    <p>여러 클라이언트 PC 화면을 하나의 관리 화면에서 동시에 확인할 수 있습니다.</p>
                 </div>
-                <div class="detail-card fade-in-up" style="animation-delay: 0.1s;">
+                <div class="detail-card fade-in">
                     <div class="detail-icon"><i class="fas fa-bolt"></i></div>
                     <h3>즉시 원격 제어</h3>
                     <p>원하는 PC를 선택해 즉시 원격 제어할 수 있으며, 실제 로컬 환경과 유사한 조작감을 제공합니다.</p>
                 </div>
-                <div class="detail-card fade-in-up" style="animation-delay: 0.2s;">
+                <div class="detail-card fade-in">
                     <div class="detail-icon"><i class="fas fa-lock"></i></div>
                     <h3>제어권 충돌 방지</h3>
                     <p>동시에 여러 관리자가 접속하더라도, 단일 사용자만 제어권을 가질 수 있도록 설계되어 입력 충돌을 방지합니다.</p>
                 </div>
-                <div class="detail-card fade-in-up" style="animation-delay: 0.3s;">
+                <div class="detail-card fade-in">
                     <div class="detail-icon"><i class="fas fa-keyboard"></i></div>
                     <h3>고급 키보드 입력 처리</h3>
                     <p>한/영 전환, 한자키, 반복 입력 등 실제 키보드 입력과 최대한 동일한 동작을 지원합니다.</p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- CTA Section -->
-    <section id="cta">
-        <div class="cta-bg"></div>
-        <div class="cta-bg-2"></div>
-        <div class="container cta-content">
-            <h2>지금 OverView를 시작하세요</h2>
-            <p>무료로 다운로드하고 원격 관리의 새로운 경험을 해보세요</p>
-            <a href="/download" class="btn btn-primary" style="margin: 0 auto;">
-                <i class="fas fa-download"></i>
-                지금 다운로드
-            </a>
-        </div>
-    </section>
+        <!-- CTA Section -->
+        <section class="section">
+            <div class="cta-section fade-in">
+                <h2>지금 OverView를 시작하세요</h2>
+                <p>무료로 다운로드하고 원격 관리의 새로운 경험을 해보세요</p>
+                <a href="/download" class="btn btn-primary">
+                    <i class="fas fa-download"></i>
+                    지금 다운로드
+                </a>
+            </div>
+        </section>
+    </div>
 </main>
 
 <footer>
@@ -885,7 +814,7 @@ HTML_TEMPLATE = """
         <div class="footer-content">
             <div class="footer-section">
                 <h4>OverView</h4>
-                <p>원격 관리의 미래를 만들어갑니다</p>
+                <p style="font-size: 12px; color: var(--text-secondary);">원격 관리의 미래를 만들어갑니다</p>
             </div>
             <div class="footer-section">
                 <h4>제품</h4>
@@ -918,15 +847,34 @@ HTML_TEMPLATE = """
     </div>
 </footer>
 
+<div class="status-bar">
+    <div class="status-bar-left">
+        <div class="status-bar-item">
+            <div class="status-indicator-small"></div>
+            SYSTEM READY | ACTIVE 1
+        </div>
+        <div class="status-bar-item">
+            CONTROL IP: 192.168.1.100
+        </div>
+    </div>
+    <div class="status-bar-item">
+        {{ current_time }}
+    </div>
+</div>
+
+<!-- QR Code -->
+<div class="qr-code-container">
+    <img src="/qr-code" alt="QR Code">
+    <div class="qr-label">@AHCONSULT</div>
+</div>
+
 <script>
-    // Header scroll effect
-    window.addEventListener('scroll', function() {
-        const header = document.querySelector('header');
-        if (window.scrollY > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
+    // Tab navigation
+    document.querySelectorAll('.tab-item').forEach((tab, index) => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+        });
     });
 
     // CPU Chart
@@ -938,14 +886,14 @@ HTML_TEMPLATE = """
             datasets: [{
                 label: 'CPU 사용률 (%)',
                 data: {{ cpu_data | tojson | safe }}.map(d => d.usage),
-                borderColor: '#0057FF',
-                backgroundColor: 'rgba(0, 87, 255, 0.1)',
+                borderColor: '#00A8E8',
+                backgroundColor: 'rgba(0, 168, 232, 0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#0057FF',
-                pointBorderColor: '#FFFFFF',
+                pointRadius: 3,
+                pointBackgroundColor: '#00A8E8',
+                pointBorderColor: '#1A1F2E',
                 pointBorderWidth: 2,
             }]
         },
@@ -959,12 +907,12 @@ HTML_TEMPLATE = """
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    ticks: { color: '#6B7280' }
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#A0A0A0', font: { size: 11 } }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#6B7280' }
+                    ticks: { color: '#A0A0A0', font: { size: 11 } }
                 }
             }
         }
@@ -980,10 +928,10 @@ HTML_TEMPLATE = """
                 label: '속도 (Mbps)',
                 data: [85.6, 18.2],
                 backgroundColor: [
-                    'rgba(0, 87, 255, 0.8)',
-                    'rgba(0, 209, 255, 0.8)'
+                    'rgba(0, 168, 232, 0.8)',
+                    'rgba(0, 217, 255, 0.8)'
                 ],
-                borderRadius: 8,
+                borderRadius: 2,
                 borderSkipped: false,
             }]
         },
@@ -997,12 +945,12 @@ HTML_TEMPLATE = """
             scales: {
                 x: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    ticks: { color: '#6B7280' }
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#A0A0A0', font: { size: 11 } }
                 },
                 y: {
                     grid: { display: false },
-                    ticks: { color: '#6B7280' }
+                    ticks: { color: '#A0A0A0', font: { size: 11 } }
                 }
             }
         }
@@ -1019,7 +967,8 @@ HTML_TEMPLATE = """
 def index():
     cpu_data = generate_cpu_data()
     system_status = get_system_status()
-    return render_template_string(HTML_TEMPLATE, cpu_data=cpu_data, system_status=system_status)
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return render_template_string(HTML_TEMPLATE, cpu_data=cpu_data, system_status=system_status, current_time=current_time)
 
 @app.route("/download")
 def download():
@@ -1033,6 +982,15 @@ def api_dashboard():
         "system_status": get_system_status(),
         "timestamp": datetime.now().isoformat()
     })
+
+@app.route("/qr-code")
+def qr_code():
+    """QR 코드 이미지 제공"""
+    qr_path = os.path.join(os.path.dirname(__file__), 'qr_code.png')
+    if os.path.exists(qr_path):
+        return send_file(qr_path, mimetype='image/png')
+    else:
+        return redirect('https://via.placeholder.com/140')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
