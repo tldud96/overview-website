@@ -1185,7 +1185,7 @@ HTML_TEMPLATE = """
 
 <!-- QR Code -->
 <div class="qr-code-container">
-    <img src="/static/qr.png" alt="QR Code">
+    <img src="/static/qr.PNG" alt="QR Code">
     <div class="qr-label">@AHCONSULT</div>
 </div>
 
