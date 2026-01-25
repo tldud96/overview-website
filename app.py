@@ -510,7 +510,227 @@ HTML_TEMPLATE = """
                 grid-template-columns: 1fr;
             }
         }
-    </style>
+    
+        /* ========== Background Particles Animation ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 168, 232, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 217, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+            animation: backgroundShift 15s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        /* ========== Glow Effect ========== */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 168, 232, 0.5), 0 0 20px rgba(0, 217, 255, 0.3);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                text-shadow: 0 0 10px rgba(0, 168, 232, 0.5), 0 0 20px rgba(0, 217, 255, 0.3);
+            }
+            50% {
+                text-shadow: 0 0 20px rgba(0, 168, 232, 0.8), 0 0 40px rgba(0, 217, 255, 0.6);
+            }
+        }
+
+        /* ========== Floating Cards ========== */
+        @keyframes floatCard {
+            0%, 100% {
+                transform: translateY(0px) rotateX(0deg);
+            }
+            50% {
+                transform: translateY(-10px) rotateX(5deg);
+            }
+        }
+
+        .feature-card {
+            animation: floatCard 4s ease-in-out infinite !important;
+        }
+
+        .feature-card:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .feature-card:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        /* ========== System Card Pulse ========== */
+        @keyframes cardPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(0, 168, 232, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(0, 168, 232, 0);
+            }
+        }
+
+        .system-card {
+            animation: cardPulse 2.5s ease-out infinite;
+        }
+
+        .system-card:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .system-card:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .system-card:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+
+        /* ========== Progress Bar Animation ========== */
+        @keyframes progressFill {
+            0% {
+                width: 0%;
+                box-shadow: 0 0 10px rgba(0, 217, 255, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 5px rgba(0, 217, 255, 0.3);
+            }
+        }
+
+        .progress-fill {
+            animation: progressFill 1.5s ease-out forwards;
+        }
+
+        /* ========== Chart Animation ========== */
+        @keyframes chartSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chart-wrapper {
+            animation: chartSlideIn 0.8s ease-out;
+        }
+
+        .chart-wrapper:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        /* ========== Button Glow Effect ========== */
+        @keyframes buttonGlow {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(0, 168, 232, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(0, 168, 232, 0.8), 0 0 30px rgba(0, 217, 255, 0.5);
+            }
+        }
+
+        .btn-primary {
+            animation: buttonGlow 2s ease-in-out infinite;
+        }
+
+        /* ========== Hover Scale Effect ========== */
+        .feature-card:hover,
+        .system-card:hover {
+            transform: scale(1.05) !important;
+        }
+
+        /* ========== Border Glow ========== */
+        @keyframes borderGlow {
+            0%, 100% {
+                border-color: var(--border-color);
+                box-shadow: 0 0 5px rgba(0, 168, 232, 0.2);
+            }
+            50% {
+                border-color: var(--accent-cyan);
+                box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+            }
+        }
+
+        .dashboard-section {
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        /* ========== Text Shimmer ========== */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue), var(--accent-cyan));
+            background-size: 1000px 100%;
+            animation: shimmer 3s infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ========== Scroll Reveal ========== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.8s ease-out;
+        }
+
+        /* ========== QR Code Glow ========== */
+        .qr-code-container {
+            animation: qrGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes qrGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(0, 168, 232, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+            }
+        }
+
+        /* ========== Rotating Border ========== */
+        @keyframes rotateBorder {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-indicator {
+            animation: rotateBorder 3s linear infinite !important;
+        }
+</style>
 </head>
 <body>
 
@@ -661,7 +881,74 @@ HTML_TEMPLATE = """
             </div>
             <div style="background-color: var(--dark-bg); padding: 15px; border-radius: 4px; border-left: 3px solid var(--accent-blue);">
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <span style="background-color: var(--accent-blue); color: #000; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 10px;">2</span>
+                    <span style="background-color: var(--accent-blue); color: #000; width: 30px; height: 30px; border-radius: 50%; di
+    // Scroll Reveal Animation
+    const revealElements = document.querySelectorAll('.feature-card, .system-card, .chart-wrapper, .footer-section');
+    
+    const revealOnScroll = () => {
+        revealElements.forEach(element => {
+            const elementTop = element.getBoundingClientRect().top;
+            const elementBottom = element.getBoundingClientRect().bottom;
+            
+            if (elementTop < window.innerHeight && elementBottom > 0) {
+                element.classList.add('active');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', revealOnScroll);
+    window.addEventListener('load', revealOnScroll);
+
+    // Add reveal class to elements
+    revealElements.forEach(element => {
+        element.classList.add('reveal');
+    });
+
+    // Animate progress bars on scroll
+    const animateProgressBars = () => {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    };
+
+    window.addEventListener('scroll', () => {
+        const dashboardSection = document.querySelector('.dashboard-section');
+        if (dashboardSection) {
+            const sectionTop = dashboardSection.getBoundingClientRect().top;
+            if (sectionTop < window.innerHeight && sectionTop > 0) {
+                animateProgressBars();
+            }
+        }
+    });
+
+    // Particle effect on mouse move
+    document.addEventListener('mousemove', (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        // Optional: Add subtle glow effect following mouse
+        const elements = document.querySelectorAll('.feature-card, .system-card');
+        elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const elX = rect.left + rect.width / 2;
+            const elY = rect.top + rect.height / 2;
+            
+            const distance = Math.sqrt(Math.pow(x - elX, 2) + Math.pow(y - elY, 2));
+            
+            if (distance < 300) {
+                const opacity = 1 - (distance / 300);
+                el.style.filter = `brightness(${1 + opacity * 0.2})`;
+            } else {
+                el.style.filter = 'brightness(1)';
+            }
+        });
+    });
+splay: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 10px;">2</span>
                     <h4>계정 생성 및 로그인</h4>
                 </div>
                 <p style="color: var(--text-secondary); font-size: 13px;">프로그램을 실행하면 로그인 화면이 나타납니다. 계정을 생성하고 로그인하세요.</p>
