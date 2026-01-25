@@ -16,7 +16,7 @@ DOWNLOAD_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config["SECRET_KEY"] = "supersecretkey_final_version"
 
-# QR Code Base64 (프로그램 실행 후 Base64로 변환)
+# QR Code Base64 - 파일 경로 문제 해결을 위해 직접 임베드
 QR_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAZQAAAG+CAYAAAC08vLwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAP+lSURBVHhezP0HnxxF0u4N8+nOvbt4eS/hvd9lFxa3wHrWW5A0kmbkhZB3IOGNQIDw3iMJ2fEz3T3dM/Fc/4iM7pqR2Puc89zv+3tyJrqysrLSREbGFZmVlXWe/f/bTfzvUHj4HXeacMozp4n0Ey+u5+3h8izj5LUMi3Bc5zep4s4RPCXGJFeN3sk184qQzL0TWnU6o/7Og7jWKjS5xFCkkrU/11/GnfpXDeukUCmZl6F9+9lUnHvb4fqptF38kh6lH9MlkTXkb5bwya4au6mTcaUVacjR3t7mkTI00c5r3Fq6VpUBj44HP+koALLxVvHn/dzVUl4N+ShfKVte59hOtcQV8Rv5lUyKK7covaA8n9BJ5NdxpNAUT5rKu6Uj6SpmXMRxTyEbj/KTP2Xk2InLMQkeJZ/KIekc"
 
 # =========================
@@ -1185,7 +1185,7 @@ HTML_TEMPLATE = """
 
 <!-- QR Code -->
 <div class="qr-code-container">
-    <img src="/static/qr.PNG" alt="QR Code">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZQAAAG+CAYAAAC08vLwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAP+lSURBVHhezP0HnxxF0u4N8+nOvbt4eS/hvd9lFxa3wHrWW5A0kmbkhZB3IOGNQIDw3iMJ2fEz3T3dM/Fc/4iM7pqR2Puc89zv+3tyJrqysrLSREbGFZmVlXWe/f/bTfzvUHj4HXeacMozp4n0Ey+u5+3h8izj5LUMi3Bc5zep4s4RPCXGJFeN3sk184qQzL0TWnU6o/7Og7jWKjS5xFCkkrU/11/GnfpXDeukUCmZl6F9+9lUnHvb4fqptF38kh6lH9MlkTXkb5bwya4au6mTcaUVacjR3t7mkTI00c5r3Fq6VpUBj44HP+koALLxVvHn/dzVUl4N+ShfKVte59hOtcQV8Rv5lUyKK7covaA8n9BJ5NdxpNAUT5rKu6Uj6SpmXMRxTyEbj/KTP2Xk2InLMQkeJZ/KIekc" alt="QR Code">
     <div class="qr-label">@AHCONSULT</div>
 </div>
 
