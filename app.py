@@ -641,8 +641,8 @@ HTML_TEMPLATE = """
 
 <!-- QR Code -->
 <div class="qr-code-container">
-    <img src="/static/qr.PNG" alt="QR Code">
-    <div class="qr-label"><i class="fab fa-telegram"></i> Telegram<br>@AHCONSULT</div>
+    <img src="{{ url_for('static', filename='qr.PNG') }}" alt="QR Code" onerror="this.src='/static/qr.png'">
+    <div class="qr-label" style="line-height: 1.4;"><i class="fab fa-telegram"></i> Telegram<br><span style="font-size: 11px; opacity: 0.9;">@AHCONSULT</span></div>
 </div>
 
 <!-- Demo Modal -->
