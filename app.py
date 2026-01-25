@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from flask import Flask, render_template_string, redirect, jsonify, request, send_file
+from flask import Flask, render_template_string, redirect, jsonify, request
 from datetime import datetime, timedelta
 import random
 
@@ -13,8 +13,11 @@ GITHUB_REPO = "overview-website"
 PROGRAM_FILENAME = "OverView.zip"
 DOWNLOAD_URL = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest/download/{PROGRAM_FILENAME}"
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config["SECRET_KEY"] = "supersecretkey_final_version"
+
+# QR Code Base64 (프로그램 실행 후 Base64로 변환)
+QR_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAZQAAAG+CAYAAAC08vLwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAP+lSURBVHhezP0HnxxF0u4N8+nOvbt4eS/hvd9lFxa3wHrWW5A0kmbkhZB3IOGNQIDw3iMJ2fEz3T3dM/Fc/4iM7pqR2Puc89zv+3tyJrqysrLSREbGFZmVlXWe/f/bTfzvUHj4HXeacMozp4n0Ey+u5+3h8izj5LUMi3Bc5zep4s4RPCXGJFeN3sk184qQzL0TWnU6o/7Og7jWKjS5xFCkkrU/11/GnfpXDeukUCmZl6F9+9lUnHvb4fqptF38kh6lH9MlkTXkb5bwya4au6mTcaUVacjR3t7mkTI00c5r3Fq6VpUBj44HP+koALLxVvHn/dzVUl4N+ShfKVte59hOtcQV8Rv5lUyKK7covaA8n9BJ5NdxpNAUT5rKu6Uj6SpmXMRxTyEbj/KTP2Xk2InLMQkeJZ/KIekc"
 
 # =========================
 # 대시보드 데이터 생성
@@ -140,6 +143,23 @@ HTML_TEMPLATE = """
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
@@ -197,6 +217,24 @@ HTML_TEMPLATE = """
 
         .section {
             margin-bottom: 40px;
+            opacity: 0;
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+
+        .section:nth-child(1) { animation-delay: 0s; }
+        .section:nth-child(2) { animation-delay: 0.1s; }
+        .section:nth-child(3) { animation-delay: 0.2s; }
+        .section:nth-child(4) { animation-delay: 0.3s; }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .section-title {
@@ -218,6 +256,13 @@ HTML_TEMPLATE = """
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             align-items: center;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .hero:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px rgba(0, 168, 232, 0.1);
         }
 
         .hero-text h1 {
@@ -253,6 +298,83 @@ HTML_TEMPLATE = """
             align-items: center;
             justify-content: center;
             min-height: 300px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 168, 232, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 217, 255, 0.6); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotateIn {
+            from {
+                opacity: 0;
+                transform: rotate(-10deg) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: rotate(0) scale(1);
+            }
         }
 
         .hero-image img {
@@ -274,19 +396,33 @@ HTML_TEMPLATE = """
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 20px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             cursor: pointer;
+            animation: bounceIn 0.6s ease-out forwards;
         }
+
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
 
         .feature-card:hover {
             background-color: var(--dark-hover);
             border-color: var(--accent-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 168, 232, 0.2);
         }
 
         .feature-icon {
             font-size: 28px;
             color: var(--accent-blue);
             margin-bottom: 12px;
+            transition: all 0.3s ease;
+            animation: rotateIn 0.6s ease-out;
+        }
+
+        .feature-card:hover .feature-icon {
+            color: var(--accent-cyan);
+            transform: scale(1.2) rotate(10deg);
         }
 
         .feature-card h3 {
@@ -323,12 +459,19 @@ HTML_TEMPLATE = """
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 16px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out forwards;
         }
+
+        .status-card:nth-child(1) { animation-delay: 0.1s; }
+        .status-card:nth-child(2) { animation-delay: 0.2s; }
+        .status-card:nth-child(3) { animation-delay: 0.3s; }
+        .status-card:nth-child(4) { animation-delay: 0.4s; }
 
         .status-card:hover {
             background-color: var(--dark-hover);
             border-color: var(--accent-blue);
+            transform: translateY(-3px);
         }
 
         .status-card.offline {
@@ -353,10 +496,17 @@ HTML_TEMPLATE = """
             height: 8px;
             border-radius: 50%;
             background-color: var(--status-online);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .status-indicator.offline {
             background-color: var(--status-offline);
+            animation: none;
         }
 
         .status-item {
@@ -405,12 +555,14 @@ HTML_TEMPLATE = """
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 20px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.7s ease-out;
         }
 
         .chart-card:hover {
             background-color: var(--dark-hover);
             border-color: var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0, 168, 232, 0.1);
         }
 
         .chart-title {
@@ -423,6 +575,80 @@ HTML_TEMPLATE = """
         .chart-container {
             position: relative;
             height: 250px;
+        }
+
+        /* ========== Demo Section ========== */
+        .demo-section {
+            background-color: var(--dark-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 30px;
+            margin: 0 20px;
+        }
+
+        .demo-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+
+        .demo-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .demo-step {
+            background-color: var(--dark-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            padding-left: 50px;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .demo-step:nth-child(1) { animation-delay: 0.1s; }
+        .demo-step:nth-child(2) { animation-delay: 0.2s; }
+        .demo-step:nth-child(3) { animation-delay: 0.3s; }
+        .demo-step:nth-child(4) { animation-delay: 0.4s; }
+        .demo-step:nth-child(5) { animation-delay: 0.5s; }
+        .demo-step:nth-child(6) { animation-delay: 0.6s; }
+
+        .demo-step:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(5px);
+        }
+
+        .demo-step-number {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--dark-bg);
+            font-size: 14px;
+        }
+
+        .demo-step h4 {
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .demo-step p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
         }
 
         /* ========== Details Grid ========== */
@@ -438,12 +664,19 @@ HTML_TEMPLATE = """
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 20px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            animation: rotateIn 0.6s ease-out forwards;
         }
+
+        .detail-card:nth-child(1) { animation-delay: 0.1s; }
+        .detail-card:nth-child(2) { animation-delay: 0.2s; }
+        .detail-card:nth-child(3) { animation-delay: 0.3s; }
+        .detail-card:nth-child(4) { animation-delay: 0.4s; }
 
         .detail-card:hover {
             background-color: var(--dark-hover);
             border-color: var(--accent-blue);
+            transform: translateY(-5px);
         }
 
         .detail-icon {
@@ -564,6 +797,7 @@ HTML_TEMPLATE = """
             height: 6px;
             border-radius: 50%;
             background-color: var(--status-online);
+            animation: pulse 2s ease-in-out infinite;
         }
 
         /* ========== QR Code ========== */
@@ -572,13 +806,19 @@ HTML_TEMPLATE = """
             bottom: 20px;
             right: 20px;
             background-color: var(--dark-panel);
-            border: 1px solid var(--border-color);
+            border: 2px solid var(--accent-blue);
             border-radius: 8px;
             padding: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 168, 232, 0.4);
+            z-index: 9999;
             transition: all 0.3s ease;
             cursor: pointer;
+            animation: slideInRight 0.8s ease-out, glow 2s ease-in-out infinite;
+            animation-delay: 0s, 0.8s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .qr-code-container:hover {
@@ -588,10 +828,12 @@ HTML_TEMPLATE = """
         }
 
         .qr-code-container img {
-            width: 140px;
-            height: 140px;
+            width: 150px;
+            height: 150px;
             border-radius: 4px;
             display: block;
+            background-color: white;
+            padding: 2px;
         }
 
         .qr-label {
@@ -601,6 +843,55 @@ HTML_TEMPLATE = """
             margin-top: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        /* ========== Modal ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: var(--dark-panel);
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            color: var(--text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close:hover {
+            color: var(--accent-blue);
         }
 
         /* ========== Responsive ========== */
@@ -626,23 +917,14 @@ HTML_TEMPLATE = """
             }
 
             .qr-code-container {
-                bottom: 80px;
+                bottom: 20px;
                 right: 10px;
+                width: auto;
             }
-        }
 
-        /* ========== Animations ========== */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
+            .demo-steps {
+                grid-template-columns: 1fr;
             }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
         }
     </style>
 </head>
@@ -675,7 +957,7 @@ HTML_TEMPLATE = """
     <div class="container">
         <!-- Hero Section -->
         <section class="section">
-            <div class="hero fade-in">
+            <div class="hero">
                 <div class="hero-text">
                     <h1>가장 직관적인<br><span class="highlight">원격 제어 솔루션</span></h1>
                     <p>여러 대의 PC를 하나의 화면에서 안정적으로 관리하세요. 실시간 모니터링, 원격 제어, 파일 전송까지 모든 기능을 한 곳에서.</p>
@@ -684,7 +966,7 @@ HTML_TEMPLATE = """
                             <i class="fas fa-download"></i>
                             지금 다운로드
                         </a>
-                        <button class="btn">
+                        <button class="btn" onclick="openDemo()">
                             <i class="fas fa-play"></i>
                             데모 보기
                         </button>
@@ -700,20 +982,59 @@ HTML_TEMPLATE = """
         <section class="section">
             <h2 class="section-title">강력한 기능들</h2>
             <div class="features-grid">
-                <div class="feature-card fade-in">
+                <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-desktop"></i></div>
                     <h3>실시간 화면 공유</h3>
                     <p>다중 PC 화면을 동시에 모니터링하고 관리하세요</p>
                 </div>
-                <div class="feature-card fade-in">
+                <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-bolt"></i></div>
                     <h3>원격 제어</h3>
                     <p>지연 없는 키보드와 마우스 입력으로 즉시 제어</p>
                 </div>
-                <div class="feature-card fade-in">
+                <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-folder"></i></div>
                     <h3>파일 전송</h3>
                     <p>단일·다중 PC에 파일을 빠르게 배포</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demo Section -->
+        <section class="section">
+            <div class="demo-section">
+                <h3 class="demo-title">📚 프로그램 사용 방법</h3>
+                <div class="demo-steps">
+                    <div class="demo-step">
+                        <div class="demo-step-number">1</div>
+                        <h4>프로그램 다운로드</h4>
+                        <p>OverView 설치 파일을 다운로드하고 실행합니다. Windows 10 이상에서 지원됩니다.</p>
+                    </div>
+                    <div class="demo-step">
+                        <div class="demo-step-number">2</div>
+                        <h4>계정 생성 및 로그인</h4>
+                        <p>프로그램을 실행하면 로그인 화면이 나타납니다. 계정을 생성하고 로그인하세요.</p>
+                    </div>
+                    <div class="demo-step">
+                        <div class="demo-step-number">3</div>
+                        <h4>PC 연결</h4>
+                        <p>관리할 PC들을 프로그램에 추가합니다. 각 PC에 클라이언트를 설치하면 자동으로 연결됩니다.</p>
+                    </div>
+                    <div class="demo-step">
+                        <div class="demo-step-number">4</div>
+                        <h4>화면 모니터링</h4>
+                        <p>메인 화면에서 모든 연결된 PC의 화면을 실시간으로 확인할 수 있습니다.</p>
+                    </div>
+                    <div class="demo-step">
+                        <div class="demo-step-number">5</div>
+                        <h4>원격 제어</h4>
+                        <p>원하는 PC를 선택하면 마우스와 키보드로 원격 제어가 가능합니다. 마치 직접 조작하는 것처럼!</p>
+                    </div>
+                    <div class="demo-step">
+                        <div class="demo-step-number">6</div>
+                        <h4>파일 전송</h4>
+                        <p>드래그 앤 드롭으로 파일을 여러 PC에 동시에 전송할 수 있습니다. 효율적인 파일 관리!</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -727,7 +1048,7 @@ HTML_TEMPLATE = """
             <!-- System Status Cards -->
             <div class="status-grid">
                 {% for system in system_status %}
-                <div class="status-card {% if system.status == 'offline' %}offline{% endif %} fade-in">
+                <div class="status-card {% if system.status == 'offline' %}offline{% endif %}">
                     <div class="status-header">
                         <span class="status-name">{{ system.name }}</span>
                         <div class="status-indicator {% if system.status == 'offline' %}offline{% endif %}"></div>
@@ -753,13 +1074,13 @@ HTML_TEMPLATE = """
 
             <!-- Charts -->
             <div class="charts-grid">
-                <div class="chart-card fade-in">
+                <div class="chart-card">
                     <h3 class="chart-title">CPU 사용률 추이</h3>
                     <div class="chart-container">
                         <canvas id="cpuChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-card fade-in">
+                <div class="chart-card">
                     <h3 class="chart-title">네트워크 상태</h3>
                     <div class="chart-container">
                         <canvas id="networkChart"></canvas>
@@ -772,22 +1093,22 @@ HTML_TEMPLATE = """
         <section class="section">
             <h2 class="section-title">상세 기능 안내</h2>
             <div class="details-grid">
-                <div class="detail-card fade-in">
+                <div class="detail-card">
                     <div class="detail-icon"><i class="fas fa-desktop"></i></div>
                     <h3>다중 PC 실시간 모니터링</h3>
                     <p>여러 클라이언트 PC 화면을 하나의 관리 화면에서 동시에 확인할 수 있습니다.</p>
                 </div>
-                <div class="detail-card fade-in">
+                <div class="detail-card">
                     <div class="detail-icon"><i class="fas fa-bolt"></i></div>
                     <h3>즉시 원격 제어</h3>
                     <p>원하는 PC를 선택해 즉시 원격 제어할 수 있으며, 실제 로컬 환경과 유사한 조작감을 제공합니다.</p>
                 </div>
-                <div class="detail-card fade-in">
+                <div class="detail-card">
                     <div class="detail-icon"><i class="fas fa-lock"></i></div>
                     <h3>제어권 충돌 방지</h3>
                     <p>동시에 여러 관리자가 접속하더라도, 단일 사용자만 제어권을 가질 수 있도록 설계되어 입력 충돌을 방지합니다.</p>
                 </div>
-                <div class="detail-card fade-in">
+                <div class="detail-card">
                     <div class="detail-icon"><i class="fas fa-keyboard"></i></div>
                     <h3>고급 키보드 입력 처리</h3>
                     <p>한/영 전환, 한자키, 반복 입력 등 실제 키보드 입력과 최대한 동일한 동작을 지원합니다.</p>
@@ -797,7 +1118,7 @@ HTML_TEMPLATE = """
 
         <!-- CTA Section -->
         <section class="section">
-            <div class="cta-section fade-in">
+            <div class="cta-section">
                 <h2>지금 OverView를 시작하세요</h2>
                 <p>무료로 다운로드하고 원격 관리의 새로운 경험을 해보세요</p>
                 <a href="/download" class="btn btn-primary">
@@ -864,8 +1185,48 @@ HTML_TEMPLATE = """
 
 <!-- QR Code -->
 <div class="qr-code-container">
-    <img src="/qr-code" alt="QR Code">
+    <img src="/static/qr.png" alt="QR Code">
     <div class="qr-label">@AHCONSULT</div>
+</div>
+
+<!-- Demo Modal -->
+<div id="demoModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDemo()">&times;</span>
+        <h2 style="margin-bottom: 20px; color: var(--accent-blue);">📚 프로그램 사용 방법</h2>
+        <div class="demo-steps" style="grid-template-columns: 1fr;">
+            <div class="demo-step">
+                <div class="demo-step-number">1</div>
+                <h4>프로그램 다운로드</h4>
+                <p>OverView 설치 파일을 다운로드하고 실행합니다. Windows 10 이상에서 지원됩니다.</p>
+            </div>
+            <div class="demo-step">
+                <div class="demo-step-number">2</div>
+                <h4>계정 생성 및 로그인</h4>
+                <p>프로그램을 실행하면 로그인 화면이 나타납니다. 계정을 생성하고 로그인하세요.</p>
+            </div>
+            <div class="demo-step">
+                <div class="demo-step-number">3</div>
+                <h4>PC 연결</h4>
+                <p>관리할 PC들을 프로그램에 추가합니다. 각 PC에 클라이언트를 설치하면 자동으로 연결됩니다.</p>
+            </div>
+            <div class="demo-step">
+                <div class="demo-step-number">4</div>
+                <h4>화면 모니터링</h4>
+                <p>메인 화면에서 모든 연결된 PC의 화면을 실시간으로 확인할 수 있습니다.</p>
+            </div>
+            <div class="demo-step">
+                <div class="demo-step-number">5</div>
+                <h4>원격 제어</h4>
+                <p>원하는 PC를 선택하면 마우스와 키보드로 원격 제어가 가능합니다. 마치 직접 조작하는 것처럼!</p>
+            </div>
+            <div class="demo-step">
+                <div class="demo-step-number">6</div>
+                <h4>파일 전송</h4>
+                <p>드래그 앤 드롭으로 파일을 여러 PC에 동시에 전송할 수 있습니다. 효율적인 파일 관리!</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -876,6 +1237,22 @@ HTML_TEMPLATE = """
             this.classList.add('active');
         });
     });
+
+    // Demo Modal
+    function openDemo() {
+        document.getElementById('demoModal').style.display = 'block';
+    }
+
+    function closeDemo() {
+        document.getElementById('demoModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('demoModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
 
     // CPU Chart
     const cpuCtx = document.getElementById('cpuChart').getContext('2d');
@@ -982,15 +1359,6 @@ def api_dashboard():
         "system_status": get_system_status(),
         "timestamp": datetime.now().isoformat()
     })
-
-@app.route("/qr-code")
-def qr_code():
-    """QR 코드 이미지 제공"""
-    qr_path = os.path.join(os.path.dirname(__file__), 'qr_code.png')
-    if os.path.exists(qr_path):
-        return send_file(qr_path, mimetype='image/png')
-    else:
-        return redirect('https://via.placeholder.com/140')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
