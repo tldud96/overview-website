@@ -881,74 +881,7 @@ HTML_TEMPLATE = """
             </div>
             <div style="background-color: var(--dark-bg); padding: 15px; border-radius: 4px; border-left: 3px solid var(--accent-blue);">
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <span style="background-color: var(--accent-blue); color: #000; width: 30px; height: 30px; border-radius: 50%; di
-    // Scroll Reveal Animation
-    const revealElements = document.querySelectorAll('.feature-card, .system-card, .chart-wrapper, .footer-section');
-    
-    const revealOnScroll = () => {
-        revealElements.forEach(element => {
-            const elementTop = element.getBoundingClientRect().top;
-            const elementBottom = element.getBoundingClientRect().bottom;
-            
-            if (elementTop < window.innerHeight && elementBottom > 0) {
-                element.classList.add('active');
-            }
-        });
-    };
-
-    window.addEventListener('scroll', revealOnScroll);
-    window.addEventListener('load', revealOnScroll);
-
-    // Add reveal class to elements
-    revealElements.forEach(element => {
-        element.classList.add('reveal');
-    });
-
-    // Animate progress bars on scroll
-    const animateProgressBars = () => {
-        const progressBars = document.querySelectorAll('.progress-fill');
-        progressBars.forEach(bar => {
-            const width = bar.style.width;
-            bar.style.width = '0%';
-            setTimeout(() => {
-                bar.style.width = width;
-            }, 100);
-        });
-    };
-
-    window.addEventListener('scroll', () => {
-        const dashboardSection = document.querySelector('.dashboard-section');
-        if (dashboardSection) {
-            const sectionTop = dashboardSection.getBoundingClientRect().top;
-            if (sectionTop < window.innerHeight && sectionTop > 0) {
-                animateProgressBars();
-            }
-        }
-    });
-
-    // Particle effect on mouse move
-    document.addEventListener('mousemove', (e) => {
-        const x = e.clientX;
-        const y = e.clientY;
-        
-        // Optional: Add subtle glow effect following mouse
-        const elements = document.querySelectorAll('.feature-card, .system-card');
-        elements.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            const elX = rect.left + rect.width / 2;
-            const elY = rect.top + rect.height / 2;
-            
-            const distance = Math.sqrt(Math.pow(x - elX, 2) + Math.pow(y - elY, 2));
-            
-            if (distance < 300) {
-                const opacity = 1 - (distance / 300);
-                el.style.filter = `brightness(${1 + opacity * 0.2})`;
-            } else {
-                el.style.filter = 'brightness(1)';
-            }
-        });
-    });
-splay: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 10px;">2</span>
+                    <span style="background-color: var(--accent-blue); color: #000; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 10px;">2</span>
                     <h4>계정 생성 및 로그인</h4>
                 </div>
                 <p style="color: var(--text-secondary); font-size: 13px;">프로그램을 실행하면 로그인 화면이 나타납니다. 계정을 생성하고 로그인하세요.</p>
@@ -1084,6 +1017,73 @@ splay: flex; align-items: center; justify-content: center; font-weight: 600; mar
                 }
             }
         }
+    });
+
+    // Scroll Reveal Animation
+    const revealElements = document.querySelectorAll('.feature-card, .system-card, .chart-wrapper, .footer-section');
+    
+    const revealOnScroll = () => {
+        revealElements.forEach(element => {
+            const elementTop = element.getBoundingClientRect().top;
+            const elementBottom = element.getBoundingClientRect().bottom;
+            
+            if (elementTop < window.innerHeight && elementBottom > 0) {
+                element.classList.add('active');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', revealOnScroll);
+    window.addEventListener('load', revealOnScroll);
+
+    // Add reveal class to elements
+    revealElements.forEach(element => {
+        element.classList.add('reveal');
+    });
+
+    // Animate progress bars on scroll
+    const animateProgressBars = () => {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    };
+
+    window.addEventListener('scroll', () => {
+        const dashboardSection = document.querySelector('.dashboard-section');
+        if (dashboardSection) {
+            const sectionTop = dashboardSection.getBoundingClientRect().top;
+            if (sectionTop < window.innerHeight && sectionTop > 0) {
+                animateProgressBars();
+            }
+        }
+    });
+
+    // Particle effect on mouse move
+    document.addEventListener('mousemove', (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        // Optional: Add subtle glow effect following mouse
+        const elements = document.querySelectorAll('.feature-card, .system-card');
+        elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const elX = rect.left + rect.width / 2;
+            const elY = rect.top + rect.height / 2;
+            
+            const distance = Math.sqrt(Math.pow(x - elX, 2) + Math.pow(y - elY, 2));
+            
+            if (distance < 300) {
+                const opacity = 1 - (distance / 300);
+                el.style.filter = `brightness(${1 + opacity * 0.2})`;
+            } else {
+                el.style.filter = 'brightness(1)';
+            }
+        });
     });
 </script>
 
