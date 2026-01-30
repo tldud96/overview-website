@@ -13,34 +13,56 @@ import requests
 import hashlib
 from functools import wraps
 import json
+import tempfile
 
 app = Flask(__name__)
-app.secret_key = 'overview-secret-key-2026'
+app.secret_key = os.environ.get('SECRET_KEY', 'overview-secret-key-2026')
 CORS(app)
 
 # Firebase 설정
-SERVICE_ACCOUNT_FILE = "serviceAccountKey.json"
-FIREBASE_URL = 'https://main-d9759-default-rtdb.firebaseio.com/'
-TELEGRAM_TOKEN = "8087683880:AAEHaQeumeYcVIKf7r4F7AFgsoCsDzBuuiA"
-ADMIN_CHAT_ID = 6681290555
-
-# Firebase Web API Key
-FIREBASE_WEB_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY', '')
+FIREBASE_URL = os.environ.get('FIREBASE_URL', 'https://main-d9759-default-rtdb.firebaseio.com/')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', "8087683880:AAEHaQeumeYcVIKf7r4F7AFgsoCsDzBuuiA")
+ADMIN_CHAT_ID = os.environ.get('ADMIN_CHAT_ID', "6681290555")
 
 # Firebase 초기화
 if not firebase_admin._apps:
-    cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': FIREBASE_URL
-    })
-
-# Firebase REST API 키 (serviceAccountKey.json에서 추출)
-try:
-    with open(SERVICE_ACCOUNT_FILE, 'r') as f:
-        firebase_config = json.load(f)
-        FIREBASE_PROJECT_ID = firebase_config.get('project_id')
-except:
-    FIREBASE_PROJECT_ID = None
+    service_account_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
+    
+    if service_account_json:
+        # 환경 변수에서 JSON 데이터를 읽어 임시 파일 생성
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp_file:
+                temp_file.write(service_account_json)
+                temp_file_path = temp_file.name
+            
+            cred = credentials.Certificate(temp_file_path)
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': FIREBASE_URL
+            })
+            
+            # 프로젝트 ID 추출
+            firebase_config = json.loads(service_account_json)
+            FIREBASE_PROJECT_ID = firebase_config.get('project_id')
+            
+            # 임시 파일 삭제
+            os.unlink(temp_file_path)
+        except Exception as e:
+            print(f"Firebase initialization error: {e}")
+            FIREBASE_PROJECT_ID = None
+    else:
+        # 로컬 파일 시도 (serviceAccountKey.json)
+        SERVICE_ACCOUNT_FILE = "serviceAccountKey.json"
+        if os.path.exists(SERVICE_ACCOUNT_FILE):
+            cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': FIREBASE_URL
+            })
+            with open(SERVICE_ACCOUNT_FILE, 'r') as f:
+                firebase_config = json.load(f)
+                FIREBASE_PROJECT_ID = firebase_config.get('project_id')
+        else:
+            print("Warning: No Firebase credentials found.")
+            FIREBASE_PROJECT_ID = None
 
 # ============================================
 # 유틸리티 함수
@@ -50,27 +72,20 @@ def send_telegram_notification(message):
     """관리자에게 텔레그램 알림 전송"""
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        data = {
+        payload = {
             "chat_id": ADMIN_CHAT_ID,
             "text": message,
             "parse_mode": "HTML"
         }
-        requests.post(url, data=data, timeout=5)
+        requests.post(url, json=payload)
     except Exception as e:
-        print(f"텔레그램 알림 실패: {e}")
-
-def get_client_ip():
-    """클라이언트 IP 주소 반환"""
-    if request.environ.get('HTTP_X_FORWARDED_FOR'):
-        return request.environ['HTTP_X_FORWARDED_FOR'].split(',')[0]
-    return request.environ.get('REMOTE_ADDR', 'unknown')
+        print(f"Telegram error: {e}")
 
 def login_required(f):
-    """로그인 확인 데코레이터"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('login_page'))
+        if 'user' not in session:
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -80,33 +95,29 @@ def login_required(f):
 
 @app.route('/')
 def index():
-    """메인 페이지"""
-    user = session.get('user_id')
-    return render_template('index.html', user=user)
+    return render_template('index.html', user=session.get('user'))
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    """대시보드 페이지 (이제 다운로드 페이지로 통합하거나 유지)"""
-    return render_template('dashboard.html')
+@app.route('/signup')
+def signup():
+    return render_template('signup.html')
+
+@app.route('/login')
+def login():
+    if 'user' in session:
+        return redirect(url_for('index'))
+    return render_template('login.html')
 
 @app.route('/download')
 @login_required
-def download_page():
-    """다운로드 페이지"""
-    return render_template('download.html')
-
-@app.route('/login', methods=['GET'])
-def login_page():
-    """로그인 페이지"""
-    if 'user_id' in session:
-        return redirect(url_for('download_page'))
-    return render_template('login.html')
-
-@app.route('/signup', methods=['GET'])
-def signup_page():
-    """회원가입 페이지"""
-    return render_template('signup.html')
+def download():
+    user_id = session['user']['uid']
+    user_ref = db.reference(f'users/{user_id}')
+    user_data = user_ref.get()
+    
+    if user_data and user_data.get('status') == 'approved':
+        return render_template('download.html')
+    else:
+        return render_template('login.html', error="관리자의 승인이 필요합니다.")
 
 # ============================================
 # API 엔드포인트
@@ -114,145 +125,74 @@ def signup_page():
 
 @app.route('/api/signup', methods=['POST'])
 def api_signup():
-    """회원가입 API"""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    
+    if not email or not password:
+        return jsonify({"success": False, "message": "이메일과 비밀번호를 입력해주세요."}), 400
+        
     try:
-        data = request.get_json()
-        required_fields = ['name', 'username', 'password', 'confirm_password']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({"success": False, "message": f"{field} 필드가 누락되었습니다."}), 400
+        # Firebase Auth 사용자 생성
+        user = auth.create_user(
+            email=email,
+            password=password,
+            display_name=name
+        )
         
-        name = data['name'].strip()
-        username = data['username'].strip()
-        password = data['password']
-        confirm_password = data['confirm_password']
-        ip = get_client_ip()
-        
-        if len(username) < 6:
-            return jsonify({"success": False, "message": "사용자 ID는 6자 이상이어야 합니다."}), 400
-        if len(password) < 6:
-            return jsonify({"success": False, "message": "비밀번호는 6자 이상이어야 합니다."}), 400
-        if password != confirm_password:
-            return jsonify({"success": False, "message": "비밀번호가 일치하지 않습니다."}), 400
-        
-        email = f"{username}@admin.com"
-        try:
-            # 먼저 기존 Auth 사용자가 있는지 확인
-            try:
-                user = auth.get_user_by_email(email)
-                uid = user.uid
-                # 기존 사용자가 있다면 비밀번호 업데이트 (재가입 처리)
-                auth.update_user(uid, password=password, display_name=name)
-            except auth.UserNotFoundError:
-                # 없으면 새로 생성
-                user = auth.create_user(email=email, password=password, display_name=name)
-                uid = user.uid
-        except Exception as e:
-            return jsonify({"success": False, "message": f"인증 계정 처리 중 오류: {str(e)}"}), 500
-        
-        # 승인 대기 목록 추가 (비밀번호 원문 포함)
-        db.reference(f'remote_requests/{uid}').set({
-            'name': name, 'username': username, 'email': email, 'password': password, 'ip': ip,
-            'timestamp': int(datetime.datetime.now().timestamp()),
-            'requested_at': datetime.datetime.now().isoformat(), 'status': 'pending'
+        # DB에 사용자 정보 저장 (대기 상태)
+        db.reference(f'users/{user.uid}').set({
+            'email': email,
+            'name': name,
+            'status': 'pending',
+            'created_at': datetime.datetime.now().isoformat()
         })
         
-        send_telegram_notification(f"🆕 <b>신규 회원가입 신청</b>\n\n👤 이름: {name}\n🆔 ID: {username}\n🔑 PW: {password}\n🌐 IP: {ip}")
-        return jsonify({"success": True, "message": "가입 신청 완료. 관리자 승인을 기다려주세요."}), 200
+        # 텔레그램 알림 전송
+        notification = f"🔔 <b>신규 가입 신청</b>\n\n이름: {name}\n이메일: {email}\n상태: 승인 대기 중"
+        send_telegram_notification(notification)
+        
+        return jsonify({"success": True, "message": "가입 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다."})
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": str(e)}), 400
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    """로그인 API"""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    # 이 앱은 보안상 Firebase Auth 클라이언트 SDK를 통해 로그인하는 것이 권장되지만,
+    # 현재 서버 로직에서는 DB의 상태를 확인하는 용도로 사용합니다.
+    # (실제 프로덕션에서는 Firebase Auth ID Token을 검증하는 방식이 좋습니다.)
+    
     try:
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({"success": False, "message": "ID와 비밀번호를 입력해주세요."}), 400
-        
-        email = f"{username}@admin.com"
-        
-        # 데이터베이스(RTDB)에서 사용자 직접 검색 및 비밀번호 비교
-        users_ref = db.reference('users')
-        all_users = users_ref.get() or {}
-        
-        user_data = None
-        target_uid = None
-        
-        for uid, data in all_users.items():
-            # DB의 username과 password_plain이 입력값과 정확히 일치하는지 확인
-            if data.get('username') == username and str(data.get('password_plain')) == str(password):
-                user_data = data
-                target_uid = uid
-                break
+        # 이메일로 사용자 조회
+        user = auth.get_user_by_email(email)
+        user_data = db.reference(f'users/{user.uid}').get()
         
         if not user_data:
-            return jsonify({"success": False, "message": "ID 또는 비밀번호가 일치하지 않습니다."}), 401
+            return jsonify({"success": False, "message": "등록되지 않은 사용자입니다."}), 404
             
-        # 승인 여부 확인 로직 유지
-        if user_data.get('status') != 'active':
-            return jsonify({"success": False, "message": "계정이 비활성화되었습니다.", "status": "inactive"}), 403
+        if user_data.get('status') != 'approved':
+            return jsonify({"success": False, "message": "관리자의 승인이 대기 중입니다."}), 403
+            
+        # 세션 저장
+        session['user'] = {
+            'uid': user.uid,
+            'email': email,
+            'name': user_data.get('name')
+        }
         
-        # 만료 확인
-        expire_date_str = user_data.get('expire_date', '2026-12-31')
-        try:
-            if datetime.datetime.strptime(expire_date_str, '%Y-%m-%d') < datetime.datetime.now():
-                return jsonify({"success": False, "message": "계정이 만료되었습니다.", "status": "expired"}), 403
-        except: pass
-        
-        # 세션 설정
-        session['user_id'] = target_uid
-        session['username'] = username
-        session['name'] = user_data.get('name')
-        
-        return jsonify({"success": True, "message": "로그인 성공"}), 200
+        return jsonify({"success": True})
     except Exception as e:
-        return jsonify({"success": False, "message": "로그인 중 오류 발생"}), 500
+        return jsonify({"success": False, "message": "로그인 정보가 올바르지 않거나 승인되지 않았습니다."}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
-    session.clear()
-    return jsonify({"success": True, "message": "로그아웃되었습니다."}), 200
-
-@app.route('/api/admin/delete_user', methods=['POST'])
-def api_admin_delete_user():
-    """관리자용 사용자 삭제 API (Auth + DB 동시 삭제)"""
-    try:
-        data = request.get_json()
-        username = data.get('username')
-        
-        if not username:
-            return jsonify({"success": False, "message": "삭제할 사용자 ID가 필요합니다."}), 400
-            
-        # 1. DB에서 사용자 찾기
-        users_ref = db.reference('users')
-        all_users = users_ref.get()
-        target_uid = None
-        
-        if all_users:
-            for uid, user_data in all_users.items():
-                if user_data.get('username') == username:
-                    target_uid = uid
-                    break
-        
-        if not target_uid:
-            return jsonify({"success": False, "message": "해당 사용자를 DB에서 찾을 수 없습니다."}), 404
-            
-        # 2. Firebase Auth에서 삭제
-        try:
-            auth.delete_user(target_uid)
-        except auth.UserNotFoundError:
-            pass # 이미 Auth에서 삭제된 경우 무시
-            
-        # 3. Firebase DB에서 삭제
-        users_ref.child(target_uid).delete()
-        
-        return jsonify({"success": True, "message": f"사용자 {username}이(가) 완전히 삭제되었습니다."}), 200
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+    session.pop('user', None)
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, port=5000)
