@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>다운로드 - OverView</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+--dark-bg: #0F1419;
+--dark-panel: #1A1F2E;
+--dark-hover: #252D3D;
+--accent-blue: #00A8E8;
+--accent-cyan: #00D9FF;
+--text-primary: #E0E0E0;
+--text-secondary: #A0A0A0;
+--border-color: #2A3548;
+}
+
+body {
+font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+background-color: var(--dark-bg);
+color: var(--text-primary);
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+}
+
+header {
+background-color: var(--dark-panel);
+border-bottom: 1px solid var(--border-color);
+padding: 15px 0;
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 0 20px; width: 100%; }
+.header-content { display: flex; justify-content: space-between; align-items: center; }
+
+.logo {
+font-size: 24px;
+font-weight: 700;
+background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+text-decoration: none;
+}
+
+.nav-buttons { display: flex; gap: 15px; }
+.btn-nav {
+background-color: var(--dark-hover);
+color: var(--text-primary);
+border: 1px solid var(--border-color);
+padding: 8px 16px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 14px;
+transition: all 0.3s ease;
+text-decoration: none;
+}
+.btn-nav:hover { background-color: var(--accent-blue); color: #000; }
+
+.download-wrapper {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 60px 20px;
+}
+
+.download-card {
+background-color: var(--dark-panel);
+border: 1px solid var(--border-color);
+padding: 50px;
+border-radius: 12px;
+width: 100%;
+max-width: 600px;
+text-align: center;
+box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+from { opacity: 0; transform: translateY(30px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.icon-box {
+width: 80px;
+height: 80px;
+background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+border-radius: 20px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 40px;
+color: #000;
+margin: 0 auto 30px;
+animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(-10px); }
+}
+
+.download-card h2 { font-size: 32px; margin-bottom: 15px; color: #fff; }
+.download-card p { color: var(--text-secondary); margin-bottom: 40px; line-height: 1.6; }
+
+.btn-download {
+display: block;
+width: 100%;
+padding: 18px;
+background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+border: none;
+border-radius: 8px;
+color: #000;
+font-weight: 700;
+font-size: 18px;
+text-decoration: none;
+transition: all 0.3s;
+box-shadow: 0 10px 30px rgba(0, 168, 232, 0.4);
+}
+
+.btn-download:hover {
+transform: translateY(-3px);
+box-shadow: 0 15px 40px rgba(0, 168, 232, 0.6);
+}
+
+.file-info {
+margin-top: 25px;
+font-size: 13px;
+color: var(--text-secondary);
+display: flex;
+justify-content: center;
+gap: 20px;
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="container">
+<div class="header-content">
+<a href="/" class="logo">OverView</a>
+<div class="nav-buttons">
+<a href="#" onclick="logout()" class="btn-nav">로그아웃</a>
+</div>
+</div>
+</div>
+</header>
+
+<div class="download-wrapper">
+<div class="download-card">
+<div class="icon-box"><i class="fas fa-download"></i></div>
+<h2>다운로드 준비 완료</h2>
+<p>성공적으로 인증되었습니다. 아래 버튼을 클릭하여 최신 버전의 OverView 프로그램을 다운로드하세요.</p>
+
+<a href="https://github.com/tldud96/overview-website/releases/latest/download/OverView.zip" class="btn-download">
+<i class="fas fa-file-zipper"></i> OverView.zip 다운로드
+</a>
+
+<div class="file-info">
+<span><i class="fas fa-check-circle"></i> 최신 버전 v1.0.4</span>
+<span><i class="fas fa-window-maximize"></i> Windows 10/11 전용</span>
+</div>
+</div>
+</div>
+
+<script>
+async function logout() {
+const res = await fetch('/api/logout', { method: 'POST' });
+if (res.ok) window.location.href = '/';
+}
+</script>
+
+</body>
+</html>
