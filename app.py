@@ -1,12 +1,12 @@
 """
-OverView - Firebase 기반 회원가입/승인 시스템 (v3 - 개별 환경변수 방식)
-Render 환경 변수 PEM Padding 문제 완전 해결 버전
+OverView - Firebase 기반 회원가입/승인 시스템 (v7 - 최종 통합 버전)
+- Firebase SDK 초기화 오류 해결을 위해 REST API 직접 호출 방식 사용
+- 이메일 로직 완전 제거 (ID 그대로 사용)
+- 환경 변수 없이도 작동 가능하며, 로컬 및 서버 환경 모두 호환
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_cors import CORS
-import firebase_admin
-from firebase_admin import credentials, auth, db
 import os
 import datetime
 import requests
@@ -17,83 +17,46 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'overview-secret-key-2026')
 CORS(app)
 
-# 설정값
-FIREBASE_URL = os.environ.get('FIREBASE_URL', 'https://login-ab1f2-default-rtdb.firebaseio.com/')
-FIREBASE_WEB_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY')
-
-# Firebase 초기화 (개별 환경변수 방식)
-if not firebase_admin._apps:
-    try:
-        # 개별 환경변수에서 읽기
-        project_id = os.environ.get('FB_PROJECT_ID')
-        client_email = os.environ.get('FB_CLIENT_EMAIL')
-        private_key = os.environ.get('FB_PRIVATE_KEY')
-        
-        if project_id and client_email and private_key:
-            # private_key 내의 실제 줄바꿈 처리 및 불필요한 따옴표 제거
-            formatted_key = private_key.replace('\\n', '\n').strip().strip('"').strip("'")
-            
-            # 인증 객체 생성
-            cred_dict = {
-                "type": "service_account",
-                "project_id": project_id,
-                "client_email": client_email,
-                "private_key": formatted_key,
-                "token_uri": "https://oauth2.googleapis.com/token",
-            }
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
-            print("Firebase Initialized successfully with individual env vars")
-        else:
-            # 로컬 파일 fallback
-            SERVICE_ACCOUNT_FILE = "firebase_key.json"
-            if os.path.exists(SERVICE_ACCOUNT_FILE):
-                cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
-                firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
-                print("Firebase Initialized via local file")
-            else:
-                print("Firebase Error: Missing environment variables or key file")
-    except Exception as e:
-        print(f"Firebase Init Error: {e}")
+# 설정값 (URL 끝에 .json을 붙여서 사용해야 함)
+FIREBASE_URL = "https://login-ab1f2-default-rtdb.firebaseio.com"
 
 # ============================================
 # 유틸리티 함수
 # ============================================
 
-def verify_with_firebase_auth(email, password):
-    # 이메일 형식 처리: @가 없으면 기본 도메인 추가, 있으면 그대로 사용
-    target_email = email if "@" in email else f"{email}@admin.com"
-    print(f"[Login Attempt] Email: {target_email}")
-
-    # 1. Firebase Web API를 사용한 비밀번호 검증 (API Key가 있는 경우)
-    if FIREBASE_WEB_API_KEY:
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
-        payload = {"email": target_email, "password": password, "returnSecureToken": True}
-        try:
-            response = requests.post(url, json=payload)
-            res_data = response.json()
-            if response.status_code == 200:
-                return True, res_data
-            else:
-                error_msg = res_data.get('error', {}).get('message', 'Login failed')
-                print(f"[Login Failed] Firebase Auth Error: {error_msg}")
-        except Exception as e:
-            print(f"[Login Error] API Request Error: {e}")
-    
-    # 2. API Key가 없거나 Auth 인증 실패 시 DB 백업 인증 시도
+def verify_user(input_id, password):
+    """REST API를 사용하여 DB(users)에서 인증"""
     try:
-        user = auth.get_user_by_email(target_email)
-        user_data = db.reference(f'users/{user.uid}').get()
+        print(f"[Login Attempt] ID: {input_id}")
+        # Firebase REST API 호출
+        response = requests.get(f"{FIREBASE_URL}/users.json", timeout=8)
+        if response.status_code != 200:
+            print(f"[DB Error] Status Code: {response.status_code}")
+            return False, "데이터베이스 연결 오류"
+            
+        users = response.json() or {}
         
-        if user_data and str(user_data.get('password_plain')) == str(password):
-            print(f"[Login Success] Authenticated via DB fallback for {target_email}")
-            return True, {"localId": user.uid, "displayName": user_data.get('name') or target_email.split('@')[0]}
-        else:
-            print(f"[Login Failed] Password mismatch for {target_email}")
-            return False, "비밀번호가 일치하지 않습니다."
+        # 딕셔너리 형태의 users를 순회하며 매칭되는 사용자 찾기
+        for uid, udata in users.items():
+            if not isinstance(udata, dict): continue
+            
+            # DB의 user_id 필드와 입력된 ID를 직접 비교
+            db_user_id = str(udata.get('user_id', '')).strip()
+            db_password = str(udata.get('password', '')).strip()
+            
+            if db_user_id == str(input_id).strip() and db_password == str(password).strip():
+                if udata.get('status') == 'active':
+                    print(f"[Login Success] ID: {input_id}")
+                    return True, {"uid": uid, "username": udata.get('username'), "user_id": input_id}
+                else:
+                    print(f"[Login Failed] Status not active for ID: {input_id}")
+                    return False, "승인 대기 중이거나 비활성화된 계정입니다."
+        
+        print(f"[Login Failed] ID or PW mismatch for ID: {input_id}")
+        return False, "아이디 또는 비밀번호가 올바르지 않습니다."
     except Exception as e:
-        print(f"[Login Failed] User not found in Auth/DB: {target_email}")
-        return False, "사용자를 찾을 수 없거나 인증에 실패했습니다."
+        print(f"[Auth Error] {e}")
+        return False, f"인증 오류: {str(e)}"
 
 def login_required(f):
     @wraps(f)
@@ -132,54 +95,71 @@ def download():
 
 @app.route('/api/signup', methods=['POST'])
 def api_signup():
+    """REST API를 사용하여 pending_requests에 등록"""
     data = request.json
-    username, password, name = data.get('email'), data.get('password'), data.get('name')
+    name = data.get('name')
+    user_id = data.get('email') # UI 필드명 유지
+    password = data.get('password')
     
-    if "@" in username:
-        username = username.split("@")[0]
-    email = f"{username}@admin.com"
+    if not name or not user_id or not password:
+        return jsonify({"success": False, "message": "모든 정보를 입력해주세요."}), 400
     
     try:
-        user = auth.create_user(email=email, password=password, display_name=name)
-        db.reference(f'users/{user.uid}').set({
-            'username': username,
-            'email': email,
-            'name': name,
-            'password_plain': password,
-            'status': 'pending',
-            'allowed_ip': 'any',
-            'expire_date': '2026-12-31',
-            'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'max_sessions_per_pc_default': 2
-        })
-        return jsonify({"success": True, "message": "가입 완료 (승인 대기 중)"})
+        # 중복 체크
+        response = requests.get(f"{FIREBASE_URL}/users.json", timeout=8)
+        users = response.json() or {}
+        for uid, udata in users.items():
+            if not isinstance(udata, dict): continue
+            if str(udata.get('user_id', '')).strip() == str(user_id).strip():
+                return jsonify({"success": False, "message": "이미 존재하는 ID입니다."}), 400
+        
+        now = datetime.datetime.now()
+        expire = now + datetime.timedelta(days=30)
+        
+        request_data = {
+            "username": name,
+            "user_id": user_id,
+            "password": password,
+            "ip": request.remote_addr,
+            "hwid": "web_signup",
+            "expire_date": expire.strftime("%Y-%m-%d"),
+            "process_limit": 1,
+            "created_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "pending"
+        }
+        
+        # REST API POST 요청
+        post_res = requests.post(f"{FIREBASE_URL}/pending_requests.json", json=request_data, timeout=8)
+        if post_res.status_code == 200:
+            return jsonify({"success": True, "message": "가입 신청 완료! 관리자 승인을 기다려주세요."})
+        else:
+            return jsonify({"success": False, "message": "가입 신청 전송 실패"}), 500
+            
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
+    """입력된 ID/PW로 직접 인증"""
     data = request.json
-    email, password = data.get('email'), data.get('password')
+    user_id = data.get('email') # UI 필드명 유지
+    password = data.get('password')
     
-    success, result = verify_with_firebase_auth(email, password)
+    success, result = verify_user(user_id, password)
     
     if not success:
-        return jsonify({"success": False, "message": "이메일 또는 비밀번호가 올바르지 않습니다."}), 401
+        return jsonify({"success": False, "message": result}), 401
         
-    uid = result.get('localId')
-    
-    user_data = db.reference(f'users/{uid}').get()
-    if not user_data or user_data.get('status') != 'active':
-        return jsonify({"success": False, "message": "승인되지 않았거나 비활성화된 계정입니다."}), 403
-
-    display_name = user_data.get('name') or result.get('displayName') or email.split('@')[0]
-
-    session['user'] = {'uid': uid, 'email': email, 'name': display_name}
+    session['user'] = {
+        'uid': result['uid'],
+        'user_id': result['user_id'],
+        'name': result['username']
+    }
     return jsonify({"success": True})
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
-    session.clear()  # 세션 전체 초기화로 더 확실하게 로그아웃
+    session.clear()
     return jsonify({"success": True})
 
 if __name__ == '__main__':

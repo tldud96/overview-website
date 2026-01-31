@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원가입 - OverView</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+--dark-bg: #0F1419;
+--dark-panel: #1A1F2E;
+--dark-hover: #252D3D;
+--accent-blue: #00A8E8;
+--accent-cyan: #00D9FF;
+--text-primary: #E0E0E0;
+--text-secondary: #A0A0A0;
+--border-color: #2A3548;
+}
+
+body {
+font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+background-color: var(--dark-bg);
+color: var(--text-primary);
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+}
+
+header {
+background-color: var(--dark-panel);
+border-bottom: 1px solid var(--border-color);
+padding: 15px 0;
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 0 20px; width: 100%; }
+.header-content { display: flex; justify-content: space-between; align-items: center; }
+
+.logo {
+font-size: 24px;
+font-weight: 700;
+background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+text-decoration: none;
+}
+
+.auth-wrapper {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 40px 20px;
+}
+
+.auth-card {
+background-color: var(--dark-panel);
+border: 1px solid var(--border-color);
+padding: 40px;
+border-radius: 8px;
+width: 100%;
+max-width: 500px;
+box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-card h2 {
+font-size: 28px;
+margin-bottom: 10px;
+color: var(--accent-blue);
+text-align: center;
+}
+
+.auth-card p {
+color: var(--text-secondary);
+text-align: center;
+margin-bottom: 30px;
+font-size: 14px;
+}
+
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary); }
+
+.form-input {
+width: 100%;
+padding: 12px 15px;
+background-color: var(--dark-bg);
+border: 1px solid var(--border-color);
+border-radius: 4px;
+color: var(--text-primary);
+outline: none;
+transition: border-color 0.3s;
+}
+
+.form-input:focus { border-color: var(--accent-blue); }
+
+.btn-submit {
+width: 100%;
+padding: 14px;
+background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+border: none;
+border-radius: 4px;
+color: #000;
+font-weight: 600;
+font-size: 16px;
+cursor: pointer;
+transition: transform 0.3s, box-shadow 0.3s;
+margin-top: 10px;
+}
+
+.btn-submit:hover {
+transform: translateY(-2px);
+box-shadow: 0 10px 20px rgba(0, 168, 232, 0.3);
+}
+
+.btn-submit:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+#msg {
+padding: 12px;
+border-radius: 4px;
+font-size: 13px;
+margin-bottom: 20px;
+display: none;
+text-align: center;
+}
+
+.msg-error { color: #FF4444; background: rgba(255, 68, 68, 0.1); }
+.msg-success { color: #00FF41; background: rgba(0, 255, 65, 0.1); }
+
+.auth-footer {
+margin-top: 25px;
+text-align: center;
+font-size: 14px;
+color: var(--text-secondary);
+}
+
+.auth-footer a { color: var(--accent-cyan); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+<div class="container">
+<div class="header-content">
+<a href="/" class="logo">OverView</a>
+</div>
+</div>
+</header>
+
+<div class="auth-wrapper">
+<div class="auth-card">
+<h2>회원가입 신청</h2>
+<p>OverView 서비스 이용을 위해 가입 정보를 입력하세요.</p>
+
+<div id="msg"></div>
+
+<form id="signupForm">
+<div class="form-group">
+<label>성함</label>
+<input type="text" id="name" class="form-input" placeholder="성함을 입력하세요" required>
+</div>
+<div class="form-group">
+<label>사용자 ID</label>
+<input type="text" id="username" class="form-input" placeholder="6자 이상의 ID" required>
+</div>
+<div class="form-group">
+<label>비밀번호</label>
+<input type="password" id="password" class="form-input" placeholder="6자 이상의 비밀번호" required>
+</div>
+<div class="form-group">
+<label>비밀번호 확인</label>
+<input type="password" id="confirm_password" class="form-input" placeholder="비밀번호 재입력" required>
+</div>
+
+<button type="submit" id="submitBtn" class="btn-submit">가입 신청하기</button>
+</form>
+
+<div class="auth-footer">
+이미 계정이 있으신가요? <a href="/login">로그인하기</a>
+</div>
+</div>
+</div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+e.preventDefault();
+const name = document.getElementById('name').value;
+const username = document.getElementById('username').value;
+const password = document.getElementById('password').value;
+const confirm_password = document.getElementById('confirm_password').value;
+const btn = document.getElementById('submitBtn');
+const msg = document.getElementById('msg');
+
+if (password !== confirm_password) {
+msg.textContent = '비밀번호가 일치하지 않습니다.';
+msg.className = 'msg-error';
+msg.style.display = 'block';
+return;
+}
+
+btn.disabled = true;
+btn.textContent = '처리 중...';
+msg.style.display = 'none';
+
+try {
+const res = await fetch('/api/signup', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+	body: JSON.stringify({ name, email: username, password, confirm_password })
+});
+const data = await res.json();
+
+if (data.success) {
+msg.textContent = data.message;
+msg.className = 'msg-success';
+msg.style.display = 'block';
+document.getElementById('signupForm').reset();
+} else {
+msg.textContent = data.message;
+msg.className = 'msg-error';
+msg.style.display = 'block';
+}
+} catch (err) {
+msg.textContent = '오류가 발생했습니다.';
+msg.className = 'msg-error';
+msg.style.display = 'block';
+} finally {
+btn.disabled = false;
+btn.textContent = '가입 신청하기';
+}
+});
+</script>
+
+</body>
+</html>
