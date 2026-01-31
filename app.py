@@ -61,35 +61,39 @@ if not firebase_admin._apps:
 # ============================================
 
 def verify_with_firebase_auth(email, password):
-    if "@" not in email:
-        email = f"{email}@admin.com"
-    elif not email.endswith("@admin.com"):
-        username = email.split("@")[0]
-        email = f"{username}@admin.com"
+    # 이메일 형식 처리: @가 없으면 기본 도메인 추가, 있으면 그대로 사용
+    target_email = email if "@" in email else f"{email}@admin.com"
+    print(f"[Login Attempt] Email: {target_email}")
 
-    # Firebase Web API를 사용한 비밀번호 검증 (우선순위)
+    # 1. Firebase Web API를 사용한 비밀번호 검증 (API Key가 있는 경우)
     if FIREBASE_WEB_API_KEY:
         url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
-        payload = {"email": email, "password": password, "returnSecureToken": True}
-        response = requests.post(url, json=payload)
-        res_data = response.json()
-        
-        if response.status_code == 200:
-            return True, res_data
-        else:
-            return False, res_data.get('error', {}).get('message', 'Login failed')
+        payload = {"email": target_email, "password": password, "returnSecureToken": True}
+        try:
+            response = requests.post(url, json=payload)
+            res_data = response.json()
+            if response.status_code == 200:
+                return True, res_data
+            else:
+                error_msg = res_data.get('error', {}).get('message', 'Login failed')
+                print(f"[Login Failed] Firebase Auth Error: {error_msg}")
+        except Exception as e:
+            print(f"[Login Error] API Request Error: {e}")
     
-    # API Key가 없는 경우: 데이터베이스의 password_plain과 비교
+    # 2. API Key가 없거나 Auth 인증 실패 시 DB 백업 인증 시도
     try:
-        user = auth.get_user_by_email(email)
+        user = auth.get_user_by_email(target_email)
         user_data = db.reference(f'users/{user.uid}').get()
         
-        if user_data and user_data.get('password_plain') == password:
-            return True, {"localId": user.uid, "displayName": user.display_name or user_data.get('name') or email.split('@')[0]}
+        if user_data and str(user_data.get('password_plain')) == str(password):
+            print(f"[Login Success] Authenticated via DB fallback for {target_email}")
+            return True, {"localId": user.uid, "displayName": user_data.get('name') or target_email.split('@')[0]}
         else:
+            print(f"[Login Failed] Password mismatch for {target_email}")
             return False, "비밀번호가 일치하지 않습니다."
     except Exception as e:
-        return False, f"사용자를 찾을 수 없습니다: {str(e)}"
+        print(f"[Login Failed] User not found in Auth/DB: {target_email}")
+        return False, "사용자를 찾을 수 없거나 인증에 실패했습니다."
 
 def login_required(f):
     @wraps(f)
