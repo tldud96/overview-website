@@ -1,6 +1,6 @@
 """
-OverView - Firebase 기반 회원가입/승인 시스템 (최종 수정 버전)
-Render 환경 변수 보안 키 로딩 문제 해결
+OverView - Firebase 기반 회원가입/승인 시스템 (v3 - 개별 환경변수 방식)
+Render 환경 변수 PEM Padding 문제 완전 해결 버전
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
@@ -12,74 +12,55 @@ import datetime
 import requests
 from functools import wraps
 import json
-import tempfile
-from dotenv import load_dotenv
-
-# 로컬 .env 파일 로드
-load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'overview-secret-key-2026')
 CORS(app)
 
-# 새로운 Firebase 설정
+# 설정값
 FIREBASE_URL = os.environ.get('FIREBASE_URL', 'https://login-ab1f2-default-rtdb.firebaseio.com/')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', "8087683880:AAEHaQeumeYcVIKf7r4F7AFgsoCsDzBuuiA")
-ADMIN_CHAT_ID = os.environ.get('ADMIN_CHAT_ID', "6681290555")
 FIREBASE_WEB_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY')
 
-# Firebase 초기화 (강력한 버전)
+# Firebase 초기화 (개별 환경변수 방식)
 if not firebase_admin._apps:
-    service_account_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
-    if service_account_json:
-        try:
-            # 1. JSON 파싱
-            if service_account_json.startswith('{'):
-                key_dict = json.loads(service_account_json)
-            else:
-                # 파일 경로인 경우
-                with open(service_account_json, 'r') as f:
-                    key_dict = json.load(f)
+    try:
+        # 개별 환경변수에서 읽기
+        project_id = os.environ.get('FB_PROJECT_ID')
+        client_email = os.environ.get('FB_CLIENT_EMAIL')
+        private_key = os.environ.get('FB_PRIVATE_KEY')
+        
+        if project_id and client_email and private_key:
+            # private_key 내의 실제 줄바꿈 처리
+            formatted_key = private_key.replace('\\n', '\n')
             
-            # 2. private_key 줄바꿈 처리 (가장 흔한 오류 원인)
-            if 'private_key' in key_dict:
-                # 실제 줄바꿈 문자로 변환 (\n -> newline)
-                key_dict['private_key'] = key_dict['private_key'].replace('\\n', '\n')
-                
-                # 만약 이미 줄바꿈이 되어 있는 상태에서 또 이스케이프 된 경우 대응
-                if '-----BEGIN PRIVATE KEY-----' in key_dict['private_key']:
-                    # PEM 형식 검증 및 보정
-                    pass 
-
-            # 3. 임시 파일을 생성하여 인증 (가장 안전한 방법)
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tf:
-                json.dump(key_dict, tf)
-                temp_path = tf.name
-            
-            cred = credentials.Certificate(temp_path)
+            # 인증 객체 생성
+            cred_dict = {
+                "type": "service_account",
+                "project_id": project_id,
+                "client_email": client_email,
+                "private_key": formatted_key,
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
-            os.unlink(temp_path) # 사용 후 삭제
-            print("Firebase Successfully Initialized via Environment Variable")
-            
-        except Exception as e:
-            print(f"Firebase Init Error: {e}")
-    else:
-        # 로컬 파일 fallback
-        SERVICE_ACCOUNT_FILE = "firebase_key.json"
-        if os.path.exists(SERVICE_ACCOUNT_FILE):
-            try:
+            print("Firebase Initialized successfully with individual env vars")
+        else:
+            # 로컬 파일 fallback
+            SERVICE_ACCOUNT_FILE = "firebase_key.json"
+            if os.path.exists(SERVICE_ACCOUNT_FILE):
                 cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
                 firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
                 print("Firebase Initialized via local file")
-            except Exception as e:
-                print(f"Firebase Local Init Error: {e}")
+            else:
+                print("Firebase Error: Missing environment variables or key file")
+    except Exception as e:
+        print(f"Firebase Init Error: {e}")
 
 # ============================================
 # 유틸리티 함수
 # ============================================
 
 def verify_with_firebase_auth(email, password):
-    # 이메일 형식 통일 (@admin.com)
     if "@" not in email:
         email = f"{email}@admin.com"
     elif not email.endswith("@admin.com"):
