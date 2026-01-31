@@ -67,22 +67,29 @@ def verify_with_firebase_auth(email, password):
         username = email.split("@")[0]
         email = f"{username}@admin.com"
 
-    if not FIREBASE_WEB_API_KEY:
-        try:
-            user = auth.get_user_by_email(email)
-            return True, {"localId": user.uid, "displayName": user.display_name or email.split('@')[0]}
-        except:
-            return False, "API Key missing and user not found"
-
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
-    payload = {"email": email, "password": password, "returnSecureToken": True}
-    response = requests.post(url, json=payload)
-    res_data = response.json()
+    # Firebase Web API를 사용한 비밀번호 검증 (우선순위)
+    if FIREBASE_WEB_API_KEY:
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
+        payload = {"email": email, "password": password, "returnSecureToken": True}
+        response = requests.post(url, json=payload)
+        res_data = response.json()
+        
+        if response.status_code == 200:
+            return True, res_data
+        else:
+            return False, res_data.get('error', {}).get('message', 'Login failed')
     
-    if response.status_code == 200:
-        return True, res_data
-    else:
-        return False, res_data.get('error', {}).get('message', 'Login failed')
+    # API Key가 없는 경우: 데이터베이스의 password_plain과 비교
+    try:
+        user = auth.get_user_by_email(email)
+        user_data = db.reference(f'users/{user.uid}').get()
+        
+        if user_data and user_data.get('password_plain') == password:
+            return True, {"localId": user.uid, "displayName": user.display_name or user_data.get('name') or email.split('@')[0]}
+        else:
+            return False, "비밀번호가 일치하지 않습니다."
+    except Exception as e:
+        return False, f"사용자를 찾을 수 없습니다: {str(e)}"
 
 def login_required(f):
     @wraps(f)
@@ -166,7 +173,7 @@ def api_login():
     session['user'] = {'uid': uid, 'email': email, 'name': display_name}
     return jsonify({"success": True})
 
-@app.route('/api/logout', methods=['POST'])
+@app.route('/te/logout', methods=['POST'])
 def api_logout():
     session.pop('user', None)
     return jsonify({"success": True})
