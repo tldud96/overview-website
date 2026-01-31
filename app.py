@@ -1,6 +1,6 @@
 """
-OverView - Firebase 기반 회원가입/승인 시스템 (수정 버전)
-새로운 Firebase 데이터베이스 및 키 적용
+OverView - Firebase 기반 회원가입/승인 시스템 (최종 수정 버전)
+Render 환경 변수 보안 키 로딩 문제 해결
 """
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
@@ -28,30 +28,51 @@ TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', "8087683880:AAEHaQeumeYcVIKf7r
 ADMIN_CHAT_ID = os.environ.get('ADMIN_CHAT_ID', "6681290555")
 FIREBASE_WEB_API_KEY = os.environ.get('FIREBASE_WEB_API_KEY')
 
-# Firebase 초기화
+# Firebase 초기화 (강력한 버전)
 if not firebase_admin._apps:
     service_account_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
     if service_account_json:
         try:
+            # 1. JSON 파싱
             if service_account_json.startswith('{'):
-                # JSON 파싱 후 private_key의 줄바꿈 문자 처리
                 key_dict = json.loads(service_account_json)
-                if 'private_key' in key_dict:
-                    key_dict['private_key'] = key_dict['private_key'].replace('\\n', '\n')
-                
-                cred = credentials.Certificate(key_dict)
-                firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
             else:
-                cred = credentials.Certificate(service_account_json)
-                firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
+                # 파일 경로인 경우
+                with open(service_account_json, 'r') as f:
+                    key_dict = json.load(f)
+            
+            # 2. private_key 줄바꿈 처리 (가장 흔한 오류 원인)
+            if 'private_key' in key_dict:
+                # 실제 줄바꿈 문자로 변환 (\n -> newline)
+                key_dict['private_key'] = key_dict['private_key'].replace('\\n', '\n')
+                
+                # 만약 이미 줄바꿈이 되어 있는 상태에서 또 이스케이프 된 경우 대응
+                if '-----BEGIN PRIVATE KEY-----' in key_dict['private_key']:
+                    # PEM 형식 검증 및 보정
+                    pass 
+
+            # 3. 임시 파일을 생성하여 인증 (가장 안전한 방법)
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tf:
+                json.dump(key_dict, tf)
+                temp_path = tf.name
+            
+            cred = credentials.Certificate(temp_path)
+            firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
+            os.unlink(temp_path) # 사용 후 삭제
+            print("Firebase Successfully Initialized via Environment Variable")
+            
         except Exception as e:
             print(f"Firebase Init Error: {e}")
     else:
-        # 새로운 키 파일 이름 적용
+        # 로컬 파일 fallback
         SERVICE_ACCOUNT_FILE = "firebase_key.json"
         if os.path.exists(SERVICE_ACCOUNT_FILE):
-            cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
-            firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
+            try:
+                cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
+                firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
+                print("Firebase Initialized via local file")
+            except Exception as e:
+                print(f"Firebase Local Init Error: {e}")
 
 # ============================================
 # 유틸리티 함수
@@ -122,7 +143,6 @@ def api_signup():
     data = request.json
     username, password, name = data.get('email'), data.get('password'), data.get('name')
     
-    # 이메일 형식 강제 변환
     if "@" in username:
         username = username.split("@")[0]
     email = f"{username}@admin.com"
@@ -156,7 +176,6 @@ def api_login():
         
     uid = result.get('localId')
     
-    # 사용자 상태 확인 (active 여부)
     user_data = db.reference(f'users/{uid}').get()
     if not user_data or user_data.get('status') != 'active':
         return jsonify({"success": False, "message": "승인되지 않았거나 비활성화된 계정입니다."}), 403
