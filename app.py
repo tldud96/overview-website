@@ -177,9 +177,9 @@ def api_login():
     session['user'] = {'uid': uid, 'email': email, 'name': display_name}
     return jsonify({"success": True})
 
-@app.route('/te/logout', methods=['POST'])
+@app.route('/api/logout', methods=['POST'])
 def api_logout():
-    session.pop('user', None)
+    session.clear()  # 세션 전체 초기화로 더 확실하게 로그아웃
     return jsonify({"success": True})
 
 if __name__ == '__main__':
