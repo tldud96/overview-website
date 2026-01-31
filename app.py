@@ -30,8 +30,8 @@ if not firebase_admin._apps:
         private_key = os.environ.get('FB_PRIVATE_KEY')
         
         if project_id and client_email and private_key:
-            # private_key 내의 실제 줄바꿈 처리
-            formatted_key = private_key.replace('\\n', '\n')
+            # private_key 내의 실제 줄바꿈 처리 및 불필요한 따옴표 제거
+            formatted_key = private_key.replace('\\n', '\n').strip().strip('"').strip("'")
             
             # 인증 객체 생성
             cred_dict = {
